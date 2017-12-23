@@ -18,8 +18,8 @@ get_ipython().magic('reload_ext autoreload')
 print('loaded collection of rename operations')
 
 
-def renameFolderCount(name="Name", start=1):
-    inpath = renameFolderCount.path + name
+def setCounters(name="Name", start=1):
+    inpath = setCounters.path + name
     dirCounter = start
     for (dirpath, dirnames, filenames) in os.walk(inpath):
         if inpath == dirpath: continue
@@ -31,15 +31,15 @@ def renameFolderCount(name="Name", start=1):
         dirCounter += 1
 
 
-renameFolderCount.path = "F:\\Video\\z_Bearbeitung\\new\\photoseries\\"
+setCounters.path = "F:\\Video\\z_Bearbeitung\\new\\photoseries\\"
 
 
-def renameFolderCountMulti():
-    inpath = renameFolderCount.path
+def setCountersMulti():
+    inpath = setCounters.path
     for (dirpath, dirnames, filenames) in os.walk(inpath):
         if not inpath == dirpath: continue
         for dirname in dirnames:
-            renameFolderCount(dirname, 1)
+            setCounters(dirname)
 
 
 def normalizeCountersKeepName(subpath="", write=False):
@@ -80,6 +80,26 @@ def normalizeCountersKeepName(subpath="", write=False):
 normalizeCountersKeepName.path = "F:\\Video\\z_Bearbeitung\\Bilder\\sorted\\best"
 
 
+def normalizeCountersMultiDirname(subpath=""):
+    if not subpath == "": subpath = "\\" + subpath
+    inpath = normalizeCounters.path + subpath
+    for (dirpath, dirnames, filenames) in os.walk(inpath):
+        if not inpath == dirpath: continue
+        for dirname in dirnames:
+            print("renameIndexNorm2Multi:", dirname)
+            normalizeCounters(dirname, dirname, 1)
+
+
+def normalizeCountersMulti(subpath="", name=""):
+    if not subpath == "": subpath = "\\" + subpath
+    inpath = normalizeCounters.path + subpath
+    dirCounter = 0
+    for (dirpath, dirnames, filenames) in os.walk(inpath):
+        if not inpath == dirpath: continue
+        for dirname in dirnames:
+            dirCounter = normalizeCounters(dirname, name, dirCounter + 1)
+
+
 def normalizeCounters(subpath="", name="", start=1, write=False):
     import re
     if not subpath == "": subpath = "\\" + subpath
@@ -114,24 +134,45 @@ def normalizeCounters(subpath="", name="", start=1, write=False):
 normalizeCounters.path = "F:\\Video\\z_Bearbeitung\\Bilder\\websites"
 
 
-def normalizeCountersMultiDirname(subpath=""):
+def normalizeCountersButKeepName(subpath="", name="", start=1, write=False):
+    import re
     if not subpath == "": subpath = "\\" + subpath
-    inpath = normalizeCounters.path + subpath
+    inpath = normalizeCountersKeepName.path + subpath
+    print(inpath)
+    dirCounter = start - 1
+    fileCounter = 1
+    lastNameMain = name
+    lastNameMid = ""
+    matchreg = r"^([-\w]+)_([0-9]+)_([0-9]+)"
+    matchreg2 = r"([0-9]+)_([0-9]+)."
+    if write: _renameTemp(inpath)
     for (dirpath, dirnames, filenames) in os.walk(inpath):
-        if not inpath == dirpath: continue
-        for dirname in dirnames:
-            print("renameIndexNorm2Multi:", dirname)
-            normalizeCounters(dirname, dirname, 1)
-
-
-def normalizeCountersMulti(subpath="", name=""):
-    if not subpath == "": subpath = "\\" + subpath
-    inpath = normalizeCounters.path + subpath
-    dirCounter = 0
-    for (dirpath, dirnames, filenames) in os.walk(inpath):
-        if not inpath == dirpath: continue
-        for dirname in dirnames:
-            dirCounter = normalizeCounters(dirname, name, dirCounter + 1)
+        for filename in filenames:
+            match = re.search(matchreg, filename)
+            match2 = re.search(matchreg2, filename)
+            if not match and not match2:
+                print("no match", dirpath, filename)
+                if write: _renameTempBack(dirpath, filename)
+                continue
+            if match:
+                nameMain = name
+                nameMid = match.group(1)
+            elif match2:
+                nameMain = match.group(1)
+                nameMid = match.group(2)
+            if not nameMain == lastNameMain:
+                dirCounter = 1
+                fileCounter = 1
+            elif not nameMid == lastNameMid:
+                dirCounter += 1
+                fileCounter = 1
+            else:
+                fileCounter += 1
+            newFilename = nameMain + "_%02d_%02d" % (dirCounter, fileCounter) + ".jpg"
+            print(newFilename)
+            if write: _renameInPlace(dirpath, filename, newFilename)
+            lastNameMain = nameMain
+            lastNameMid = nameMid
 
 
 def FoldersToUpper(subpath="", write=True):
