@@ -11,7 +11,6 @@ __copyright__ = "Copyright 2017, Marco Volkert"
 __email__ = "marco.volkert24@gmx.de"
 __status__ = "Development"
 
-
 from lxml import html
 import requests
 import os
