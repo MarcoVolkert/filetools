@@ -42,6 +42,21 @@ def downloadPics(mainpage, name):
             downloadFile(pic, dest)
 
 
+def downloadPicsFromGallery():
+    mainpage = "http://amourgirlz.com"
+    maindest = 'F:\\Video\\z_Bearbeitung\\new\\photoseries\\'
+    mainname = mainpage.replace('http://', '').replace('.com', '')
+    namedest = maindest + mainname
+    os.makedirs(namedest, exist_ok=True)
+    gallery = "/gallery/teen-strips-outdoors/"
+
+    pics = getHrefs(mainpage, gallery, css='[@class="fancybox"]')
+    dest = namedest
+    print(dest)
+    os.makedirs(dest, exist_ok=True)
+    for pic in pics:
+        downloadFile(pic, dest)
+
 def downloadFile(picUrl, dest):
     page = requests.get(picUrl)
     filename = dest + '\\' + picUrl.split('/')[-1]
