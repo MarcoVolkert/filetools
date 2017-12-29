@@ -19,8 +19,6 @@ from IPython import get_ipython
 
 get_ipython().magic('reload_ext autoreload')
 
-print('loaded collection of rename operations')
-
 
 def setCounters(name="", start=1, subpath=""):
     inpath = _concatPath(subpath) + "\\" + name

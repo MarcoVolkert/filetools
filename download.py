@@ -15,6 +15,10 @@ from lxml import html
 import requests
 import os
 
+from IPython import get_ipython
+
+get_ipython().magic('reload_ext autoreload')
+
 
 def getHrefs(mainpage, subpage, css='', contains=''):
     page = requests.get(mainpage + subpage)
@@ -45,6 +49,12 @@ def downloadPics(mainpage, name, subSide="model", g_css='', g_contains='gallery'
     ofile.close()
 
 
+def downloadPicsMulti(mainpage, names, subSide="model", g_css='', g_contains='gallery', p_css='[@class="fancybox"]',
+                      p_contains=""):
+    for name in names:
+        downloadPics(mainpage, name, subSide, g_css, g_contains, p_css, p_contains)
+
+
 def downloadPicsFromGallery(mainpage, subpage, css='[@class="fancybox"]', contains=""):
     maindest = os.getcwd()
     mainname = mainpage.replace('http://', '').replace('.com', '')
@@ -68,30 +78,23 @@ def downloadFile(picUrl, dest):
 def downloadMulti():
     # names=['katy-rios','kiara-lord','sara-kay','vinna-reed','alice-march']
     # mainpage='http://alsscangirlz.com'
-    # for name in names:
-    #   downloadPics(mainpage,name)
+    # downloadPicsMulti(mainpage,names)
     # names=['milla','jessica','foxy-di','silvie','angelica']
     # mainpage='http://matrixteens.com'
-    # for name in names:
-    #   downloadPics(mainpage,name)
+    # downloadPicsMulti(mainpage,names)
     # names=['luba','selma','larisa-a','irishka','nikola','vera']
     # mainpage='http://xmodelpics.com'
-    # for name in names:
-    #   downloadPics(mainpage,name)
+    # downloadPicsMulti(mainpage,names)
     names = ['nikia-a', "adel-c", "nastya-k"]
     mainpage = 'http://metartgirlz.com'
-    for name in names:
-        downloadPics(mainpage, name)
+    downloadPicsMulti(mainpage, names)
     # names = ['nikia-a']
     # mainpage = 'http://www.ametart.com'
-    # for name in names:
-    #   downloadPics(mainpage, name, pcontains="photos", pcss="",subSide="models")
+    # downloadPicsMulti(mainpage, names, pcontains="photos", pcss="",subSide="models")
     # names = ['jeff-milton', 'emily-bloom', 'kay-j', 'lena-anderson', 'zlatka-a', 'sigrid', 'augusta-crystal', 'daniel-sea']
     # mainpage = 'http://metartgirlz.com'
-    # for name in names:
-    #    downloadPics(mainpage, name)
+    # downloadPicsMulti(mainpage, names)
     # names = ['lara','kisa','emily','mari','nensi','sunna','tina','rima','nelly']
     # names+= ['sofa', 'mila', 'bonita', 'lapa', 'tutty', 'chloe', 'brie', 'nikita', 'barbie','parisa']
     # mainpage = 'http://amourgirlz.com'
-    # for name in names:
-    #    downloadPics(mainpage, name)
+    # downloadPicsMulti(mainpage, names)
