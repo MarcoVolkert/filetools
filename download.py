@@ -22,74 +22,76 @@ def getHrefs(mainpage, subpage, css='', contains=''):
     aList = tree.xpath('//a' + css)
     hrefs = [x.get("href") for x in aList]
     hrefs = [x for x in hrefs if contains in x]
-    # print(hrefs)
     return hrefs
 
 
-def downloadPics(mainpage, name, gcontains='gallery', subSide="model", pcontains="", pcss='[@class="fancybox"]'):
-    maindest = 'F:\\Video\\z_Bearbeitung\\new\\photoseries\\'
+def downloadPics(mainpage, name, subSide="model", g_css='', g_contains='gallery', p_css='[@class="fancybox"]',
+                 p_contains=""):
+    maindest = os.getcwd()
     mainname = mainpage.replace('http://', '').replace('.com', '')
     namedest = maindest + mainname + '\\' + name
     os.makedirs(namedest, exist_ok=True)
 
     ofile = open(maindest + "download.txt", 'a')
-    galleries = getHrefs(mainpage, '/'+subSide+'/' + name + '/', contains=gcontains)
+    galleries = getHrefs(mainpage, '/' + subSide + '/' + name + '/', g_css, g_contains)
     for i, gallery in enumerate(galleries):
-        pics = getHrefs(mainpage, gallery, css=pcss, contains=pcontains)
-        dest = namedest + '\\%03d'%i
+        dest = namedest + '\\%03d' % i
         print(dest)
         os.makedirs(dest, exist_ok=True)
-        ofile.write( name + " "+pics[0].split("/")[-1] + "\n")
+        pics = getHrefs(mainpage, gallery, p_css, p_contains)
+        ofile.write(name + " " + pics[0].split("/")[-1] + "\n")
         for pic in pics:
             downloadFile(pic, dest)
     ofile.close()
 
-def downloadPicsFromGallery():
-    mainpage = "http://amourgirlz.com"
-    maindest = 'F:\\Video\\z_Bearbeitung\\new\\photoseries\\'
-    mainname = mainpage.replace('http://', '').replace('.com', '')
-    namedest = maindest + mainname
-    os.makedirs(namedest, exist_ok=True)
-    gallery = "/gallery/teen-strips-outdoors/"
 
-    pics = getHrefs(mainpage, gallery, css='[@class="fancybox"]')
-    dest = namedest
+def downloadPicsFromGallery(mainpage, subpage, css='[@class="fancybox"]', contains=""):
+    maindest = os.getcwd()
+    mainname = mainpage.replace('http://', '').replace('.com', '')
+    dest = maindest + mainname
+    os.makedirs(dest, exist_ok=True)
+
+    pics = getHrefs(mainpage, subpage, css, contains)
     print(dest)
     os.makedirs(dest, exist_ok=True)
     for pic in pics:
         downloadFile(pic, dest)
 
+
 def downloadFile(picUrl, dest):
     page = requests.get(picUrl)
     filename = dest + '\\' + picUrl.split('/')[-1]
-    # print(filename)
     with open(filename, 'wb') as f:
         f.write(page.content)
 
 
 def downloadMulti():
-    #names=['katy-rios','kiara-lord','sara-kay','vinna-reed','alice-march']
-    #mainpage='http://alsscangirlz.com'
-    #for name in names:
+    # names=['katy-rios','kiara-lord','sara-kay','vinna-reed','alice-march']
+    # mainpage='http://alsscangirlz.com'
+    # for name in names:
     #   downloadPics(mainpage,name)
-    #names=['milla','jessica','foxy-di','silvie','angelica']
-    #mainpage='http://matrixteens.com'
-    #for name in names:
+    # names=['milla','jessica','foxy-di','silvie','angelica']
+    # mainpage='http://matrixteens.com'
+    # for name in names:
     #   downloadPics(mainpage,name)
-    #names=['luba','selma','larisa-a','irishka','nikola','vera']
-    #mainpage='http://xmodelpics.com'
-    #for name in names:
+    # names=['luba','selma','larisa-a','irishka','nikola','vera']
+    # mainpage='http://xmodelpics.com'
+    # for name in names:
     #   downloadPics(mainpage,name)
-    names = ['daniel-sea']
-    mainpage = 'http://www.ametart.com'
+    names = ['nikia-a', "adel-c", "nastya-k"]
+    mainpage = 'http://metartgirlz.com'
     for name in names:
-        downloadPics(mainpage, name, pcontains="photos", pcss="",subSide="models")
-    #names = ['jeff-milton', 'emily-bloom', 'kay-j', 'lena-anderson', 'zlatka-a', 'sigrid', 'augusta-crystal', 'daniel-sea']
-    #mainpage = 'http://metartgirlz.com'
-    #for name in names:
+        downloadPics(mainpage, name)
+    # names = ['nikia-a']
+    # mainpage = 'http://www.ametart.com'
+    # for name in names:
+    #   downloadPics(mainpage, name, pcontains="photos", pcss="",subSide="models")
+    # names = ['jeff-milton', 'emily-bloom', 'kay-j', 'lena-anderson', 'zlatka-a', 'sigrid', 'augusta-crystal', 'daniel-sea']
+    # mainpage = 'http://metartgirlz.com'
+    # for name in names:
     #    downloadPics(mainpage, name)
-    #names = ['lara','kisa','emily','mari','nensi','sunna','tina','rima','nelly']
-    #names+= ['sofa', 'mila', 'bonita', 'lapa', 'tutty', 'chloe', 'brie', 'nikita', 'barbie','parisa']
-    #mainpage = 'http://amourgirlz.com'
-    #for name in names:
+    # names = ['lara','kisa','emily','mari','nensi','sunna','tina','rima','nelly']
+    # names+= ['sofa', 'mila', 'bonita', 'lapa', 'tutty', 'chloe', 'brie', 'nikita', 'barbie','parisa']
+    # mainpage = 'http://amourgirlz.com'
+    # for name in names:
     #    downloadPics(mainpage, name)
