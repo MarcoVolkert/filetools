@@ -4,7 +4,7 @@ from natsort import natsorted
 
 
 def renameInPlace(dirpath, oldFilename, newFilename):
-    os.rename(dirpath + "\\" + oldFilename, dirpath + "\\" + newFilename)
+    os.rename(os.path.join(dirpath, oldFilename), os.path.join(dirpath, newFilename))
 
 
 def renameTemp(inpath):
@@ -31,7 +31,7 @@ def renameTempBack(dirpath, filename):
 
 
 def concatPath(subpath):
-    if not subpath == "": subpath = "\\" + subpath
+    if not subpath == "": subpath = os.path.sep + subpath
     fullpath = os.getcwd() + subpath
     if not os.path.isdir(fullpath):
         print(fullpath, "is not a valid path")
@@ -56,9 +56,9 @@ def writeToFile(path, content):
 
 
 def moveToSubpath(filename, dirpath, subpath):
-    os.makedirs(dirpath + "\\" + subpath, exist_ok=True)
-    if not os.path.isfile(dirpath + "\\" + filename): return
-    os.rename(dirpath + "\\" + filename, dirpath + "\\" + subpath + "\\" + filename)
+    os.makedirs(os.path.join(dirpath, subpath), exist_ok=True)
+    if not isfile(dirpath, filename): return
+    os.rename(os.path.join(dirpath, filename), os.path.join(dirpath, subpath, filename))
 
 
 def getFileNamesOfMainDir(path):
@@ -71,7 +71,7 @@ def getFileNamesOfMainDir2(path, subpath=True):
     for (dirpath, dirnames, filenames) in os.walk(path):
         if not subpath and not dirpath == path: break
         out_filenames.extend([(dirpath, filename) for filename in filenames if ".jpg" in filename])
-    out_filenames = natsorted(out_filenames, key = lambda x: x[1])
+    out_filenames = natsorted(out_filenames, key=lambda x: x[1])
     return out_filenames
 
 

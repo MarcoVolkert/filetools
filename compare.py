@@ -19,7 +19,7 @@ def are_similar(filenameA, filenameB, threshold=0.9):
     if imageA is None or imageB is None: return False
     s = ssim(imageA, imageB)
     if threshold < s:
-        print(os.path.basename(filenameA), os.path.basename(filenameB), s)
+        print(filenameA[0], filenameB[0], s)
     return threshold < s
 
 
@@ -53,7 +53,8 @@ def compare_images(directory, nameA, nameB):
     print("s", s)
 
 
-def read_picture(name="", xscale=500):
+def read_picture(path: tuple, xscale=500):
+    name = os.path.join(*path)
     picture = cv2.imread(name)
     if picture is None:
         print("failed to load", name)
