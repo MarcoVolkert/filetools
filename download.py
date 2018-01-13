@@ -74,27 +74,3 @@ def downloadFile(picUrl, dest):
     with open(filename, 'wb') as f:
         f.write(page.content)
 
-
-def downloadMulti():
-    # names=['katy-rios','kiara-lord','sara-kay','vinna-reed','alice-march']
-    # mainpage='http://alsscangirlz.com'
-    # downloadPicsMulti(mainpage,names)
-    # names=['milla','jessica','foxy-di','silvie','angelica']
-    # mainpage='http://matrixteens.com'
-    # downloadPicsMulti(mainpage,names)
-    # names=['luba','selma','larisa-a','irishka','nikola','vera']
-    # mainpage='http://xmodelpics.com'
-    # downloadPicsMulti(mainpage,names)
-    names = ['nikia-a', "adel-c", "nastya-k"]
-    mainpage = 'http://metartgirlz.com'
-    downloadPicsMulti(mainpage, names)
-    # names = ['nikia-a']
-    # mainpage = 'http://www.ametart.com'
-    # downloadPicsMulti(mainpage, names, pcontains="photos", pcss="",subSide="models")
-    # names = ['jeff-milton', 'emily-bloom', 'kay-j', 'lena-anderson', 'zlatka-a', 'sigrid', 'augusta-crystal', 'daniel-sea']
-    # mainpage = 'http://metartgirlz.com'
-    # downloadPicsMulti(mainpage, names)
-    # names = ['lara','kisa','emily','mari','nensi','sunna','tina','rima','nelly']
-    # names+= ['sofa', 'mila', 'bonita', 'lapa', 'tutty', 'chloe', 'brie', 'nikita', 'barbie','parisa']
-    # mainpage = 'http://amourgirlz.com'
-    # downloadPicsMulti(mainpage, names)

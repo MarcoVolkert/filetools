@@ -9,12 +9,11 @@ __copyright__ = "Copyright 2017, Marco Volkert"
 __email__ = "marco.volkert24@gmx.de"
 __status__ = "Development"
 
-import os
-import re
 from compare import are_similar
 from natsort import natsorted
 import datetime as dt
 from collections import OrderedDict
+from helpers import *
 # for reloading
 from IPython import get_ipython
 
@@ -22,7 +21,7 @@ get_ipython().magic('reload_ext autoreload')
 
 
 def setCounters(name="", start=1, subpath=""):
-    inpath = _concatPath(subpath) + "\\" + name
+    inpath = concatPath(subpath) + "\\" + name
     dirCounter = start
     for (dirpath, dirnames, filenames) in os.walk(inpath):
         if inpath == dirpath: continue
@@ -30,15 +29,15 @@ def setCounters(name="", start=1, subpath=""):
         fileCounter = 1
         filenames = natsorted(filenames)
         for filename in filenames:
-            newFilename = _getNewName(name, dirCounter, fileCounter)
+            newFilename = getNewName(name, dirCounter, fileCounter)
             os.rename(dirpath + "\\" + filename, inpath + "\\" + newFilename)
             fileCounter += 1
         if filenames: dirCounter += 1
-        _removeIfEmtpy(dirpath)
+        removeIfEmtpy(dirpath)
 
 
 def setCountersMulti(subpath=""):
-    inpath = _concatPath(subpath)
+    inpath = concatPath(subpath)
     foldersToUpper(True, subpath)
     for (dirpath, dirnames, filenames) in os.walk(inpath):
         if not inpath == dirpath: continue
@@ -48,7 +47,7 @@ def setCountersMulti(subpath=""):
 
 
 def normalizeCountersKeepName(subpath="", start=1, write=False, digits=2):
-    inpath = _concatPath(subpath)
+    inpath = concatPath(subpath)
     fileCounter = 1
     lastNameMain = ""
     lastNameMid = ""
@@ -56,14 +55,14 @@ def normalizeCountersKeepName(subpath="", start=1, write=False, digits=2):
     matchreg = r"^([-\w +]+)_([ALS]{0,3}[0-9]+)_([0-9]+)"
     outstring = ""
     dirCounterDict = dict()
-    if write: _renameTemp(inpath)
+    if write: renameTemp(inpath)
     for (dirpath, dirnames, filenames) in os.walk(inpath):
         filenames = natsorted(filenames)
         for filename in filenames:
             match = re.search(matchreg, filename)
             if not match:
                 print("no match", dirpath, filename)
-                if write: _renameTempBack(dirpath, filename)
+                if write: renameTempBack(dirpath, filename)
                 continue
             nameMain = match.group(1)
             nameMid = match.group(2)
@@ -78,17 +77,17 @@ def normalizeCountersKeepName(subpath="", start=1, write=False, digits=2):
                 fileCounter = 1
             else:
                 fileCounter += 1
-            newFilename = _getNewName(nameMain, dirCounterDict[nameMain], fileCounter, digits)
+            newFilename = getNewName(nameMain, dirCounterDict[nameMain], fileCounter, digits)
             outstring += newFilename + "\n"
-            if write: _renameInPlace(dirpath, filename, newFilename)
+            if write: renameInPlace(dirpath, filename, newFilename)
             lastNameMain = nameMain
             lastNameMid = nameMid
             lastdirpath = dirpath
-    if not write: _writeToFile(inpath + "\\newNames.txt", outstring)
+    if not write: writeToFile(inpath + "\\newNames.txt", outstring)
 
 
 def normalizeCountersMultiDirname(write=False, subpath="", digits=2):
-    inpath = _concatPath(subpath)
+    inpath = concatPath(subpath)
     for (dirpath, dirnames, filenames) in os.walk(inpath):
         if not inpath == dirpath: continue
         for dirname in dirnames:
@@ -97,7 +96,7 @@ def normalizeCountersMultiDirname(write=False, subpath="", digits=2):
 
 
 def normalizeCountersMulti(name="", write=False, subpath="", digits=2):
-    inpath = _concatPath(subpath)
+    inpath = concatPath(subpath)
     dirCounter = 0
     for (dirpath, dirnames, filenames) in os.walk(inpath):
         if not inpath == dirpath: continue
@@ -106,12 +105,12 @@ def normalizeCountersMulti(name="", write=False, subpath="", digits=2):
 
 
 def normalizeCounters(subpath="", name="", start=1, write=False, digits=2):
-    inpath = _concatPath(subpath)
+    inpath = concatPath(subpath)
     dirCounter = start - 1
     fileCounter = 1
     lastNameMid = ""
     matchreg = r"([0-9]+)_([0-9]+)."
-    if write: _renameTemp(inpath)
+    if write: renameTemp(inpath)
     for (dirpath, dirnames, filenames) in os.walk(inpath):
         print("renameIndexNorm2:", dirpath)
         filenames = natsorted(filenames)
@@ -120,7 +119,7 @@ def normalizeCounters(subpath="", name="", start=1, write=False, digits=2):
             match = re.search(matchreg, filename)
             if not match:
                 print("no match", dirpath, filename)
-                if write: _renameTempBack(dirpath, filename)
+                if write: renameTempBack(dirpath, filename)
                 continue
             nameMid = match.group(1)
             if not nameMid == lastNameMid:
@@ -128,15 +127,15 @@ def normalizeCounters(subpath="", name="", start=1, write=False, digits=2):
                 fileCounter = 1
             else:
                 fileCounter += 1
-            newFilename = _getNewName(name, dirCounter, fileCounter, digits)
+            newFilename = getNewName(name, dirCounter, fileCounter, digits)
             print(dirpath, newFilename)
-            if write: _renameInPlace(dirpath, filename, newFilename)
+            if write: renameInPlace(dirpath, filename, newFilename)
             lastNameMid = nameMid
     return dirCounter
 
 
 def normalizeCountersButKeepName(subpath="", name="", start=1, write=False, digits=2):
-    inpath = _concatPath(subpath)
+    inpath = concatPath(subpath)
     dirCounter = start - 1
     normalDirCounter = dirCounter
     fileCounter = 1
@@ -147,7 +146,7 @@ def normalizeCountersButKeepName(subpath="", name="", start=1, write=False, digi
     matchreg = r"([0-9]+)_([0-9]+)."
     outstring = ""
     dirCounterDict = dict()
-    if write: _renameTemp(inpath)
+    if write: renameTemp(inpath)
     for (dirpath, dirnames, filenames) in os.walk(inpath):
         filenames = natsorted(filenames)
         for filename in filenames:
@@ -165,7 +164,7 @@ def normalizeCountersButKeepName(subpath="", name="", start=1, write=False, digi
                     dirCounter = normalDirCounter
             else:
                 print("no match", dirpath, filename)
-                if write: _renameTempBack(dirpath, filename)
+                if write: renameTempBack(dirpath, filename)
                 continue
             if not nameMid == lastNameMid or not lastdirpath == dirpath:
                 dirCounter += 1
@@ -176,22 +175,22 @@ def normalizeCountersButKeepName(subpath="", name="", start=1, write=False, digi
                 normalDirCounter = dirCounter
             else:
                 dirCounterDict[nameMain] = dirCounter
-            newFilename = _getNewName(nameMain, dirCounter, fileCounter, digits)
+            newFilename = getNewName(nameMain, dirCounter, fileCounter, digits)
 
             if write:
-                _renameInPlace(dirpath, filename, newFilename)
+                renameInPlace(dirpath, filename, newFilename)
             else:
                 outstring += filename + "\t" + newFilename + "\n"
             lastNameMain = nameMain
             lastNameMid = nameMid
             lastdirpath = dirpath
-    if not write: _writeToFile(inpath + "\\newNames.txt", outstring)
+    if not write: writeToFile(inpath + "\\newNames.txt", outstring)
     return normalDirCounter
 
 
 def foldersToUpper(write=True, subpath=""):
     # from name-surname to Name Surname
-    inpath = _concatPath(subpath)
+    inpath = concatPath(subpath)
     for (dirpath, dirnames, filenames) in os.walk(inpath):
         if not inpath == dirpath: continue
         for dirname in dirnames:
@@ -203,99 +202,28 @@ def foldersToUpper(write=True, subpath=""):
                 newName += ' '
             newName = newName[:-1]
             print(newName)
-            if write: _renameInPlace(dirpath, dirname, newName)
-
-
-def _renameInPlace(dirpath, oldFilename, newFilename):
-    os.rename(dirpath + "\\" + oldFilename, dirpath + "\\" + newFilename)
-
-
-def _renameTemp(inpath):
-    if not os.path.isdir(inpath):
-        print('not found directory: ' + inpath)
-        return
-    for (dirpath, dirnames, filenames) in os.walk(inpath):
-        for filename in filenames:
-            _renameInPlace(dirpath, filename, filename + _renameTemp.temppostfix)
-    return _renameTemp.temppostfix
-
-
-_renameTemp.temppostfix = "temp"
-
-
-def _renameTempSingle(dirpath, filename):
-    _renameInPlace(dirpath, filename, filename + _renameTemp.temppostfix)
-    return _renameTemp.temppostfix
-
-
-def _renameTempBack(dirpath, filename):
-    newFilename = re.sub(_renameTemp.temppostfix + '$', '', filename)
-    _renameInPlace(dirpath, filename, newFilename)
-
-
-def _concatPath(subpath):
-    if not subpath == "": subpath = "\\" + subpath
-    fullpath = os.getcwd() + subpath
-    if not os.path.isdir(fullpath):
-        print(fullpath, "is not a valid path")
-    else:
-        print(fullpath)
-    return fullpath
-
-
-def _getNewName(name, dirCounter, fileCounter, digits=2):
-    if name: name += "_"
-    return name + ("%0" + str(digits) + "d_%02d") % (dirCounter, fileCounter) + ".jpg"
-
-
-def _removeIfEmtpy(dirpath):
-    if not os.listdir(dirpath): os.rmdir(dirpath)
-
-
-def _writeToFile(path, content):
-    ofile = open(path, 'w')
-    ofile.write(content)
-    ofile.close()
-
-
-def _moveToSubpath(filename, dirpath, subpath):
-    os.makedirs(dirpath + "\\" + subpath, exist_ok=True)
-    if not os.path.isfile(dirpath + "\\" + filename): return
-    os.rename(dirpath + "\\" + filename, dirpath + "\\" + subpath + "\\" + filename)
+            if write: renameInPlace(dirpath, dirname, newName)
 
 
 def detectSimilar(pathA, pathB=""):
     if not pathB: pathB = pathA
-    filenamesA = []
-    filenamesB = []
-    for (dirpath, dirnames, filenames) in os.walk(pathA):
-        if not pathA == dirpath: break
-        filenamesA = [filename for filename in filenames if ".jpg" in filename]
-    for (dirpath, dirnames, filenames) in os.walk(pathB):
-        if not pathB == dirpath: break
-        filenamesB = [filename for filename in filenames if ".jpg" in filename]
+    filenamesA = getFileNamesOfMainDir(pathA)
+    filenamesB = getFileNamesOfMainDir(pathB)
 
     filenamesB = filenamesB[::-1]
     for filenameA in filenamesA:
         print(filenameA)
         for filenameB in filenamesB:
             if filenameA == filenameB: break
-            if not os.path.isfile(pathA + "\\" + filenameA): continue
-            if not os.path.isfile(pathB + "\\" + filenameB): continue
+            if not isfile(pathA, filenameA) or not isfile(pathB, filenameB): continue
             if not are_similar(pathA + "\\" + filenameA, pathB + "\\" + filenameB, 0.95): continue
-            _moveToSubpath(filenameB, pathB, "multiple")
+            moveToSubpath(filenameB, pathB, "multiple")
 
 
 def detectSimilar2(pathA, pathB="", startwith=""):
     if not pathB: pathB = pathA
-    filenamesA = []
-    filenamesB = []
-    for (dirpath, dirnames, filenames) in os.walk(pathA):
-        if not pathA == dirpath: break
-        filenamesA = [filename for filename in filenames if ".jpg" in filename]
-    for (dirpath, dirnames, filenames) in os.walk(pathB):
-        if not pathB == dirpath: break
-        filenamesB = [filename for filename in filenames if ".jpg" in filename]
+    filenamesA = getFileNamesOfMainDir(pathA)
+    filenamesB = getFileNamesOfMainDir(pathB)
 
     found = False
     for i, filenameA in enumerate(filenamesA):
@@ -303,14 +231,53 @@ def detectSimilar2(pathA, pathB="", startwith=""):
         if startwith and not found: continue
         print(filenameA)
         for j, filenameB in enumerate(filenamesB[i + 1:i + 40]):
-            if not os.path.isfile(pathA + "\\" + filenameA): continue
-            if not os.path.isfile(pathB + "\\" + filenameB): continue
+            if not isfile(pathA, filenameA) or not isfile(pathB, filenameB): continue
             if not are_similar(pathA + "\\" + filenameA, pathB + "\\" + filenameB, 0.95): continue
-            _moveToSubpath(filenameB, pathB, "multiple")
+            moveToSubpath(filenameB, pathB, "multiple")
+
+
+def detectSimilarSeries(similarity=0.95):
+    path = concatPath("")
+    filenames = getFileNamesOfMainDir(path)
+    matchreg = r"([0-9]+)_([0-9]+)."
+
+    moveList=[]
+    dircounter =1
+    for i, filenameA in enumerate(filenames):
+
+        if not isfile(path, filenameA): continue
+        matchA = re.search(matchreg, filenameA)
+        if not matchA: continue
+        print("A",filenameA)
+        lastNameMid = matchA.group(1)
+        moveList.append(filenameA)
+        for j, filenameB in enumerate(filenames[i + 1:]):
+            if not isfile(path, filenameA) or not isfile(path, filenameB): continue
+            matchB = re.search(matchreg, filenameB)
+            if not matchB: continue
+            nameMid = matchB.group(1)
+            namEnd = matchB.group(2)
+            if nameMid == lastNameMid:
+                print("B", filenameB)
+                moveList.append(filenameB)
+                continue
+            if not namEnd == "01": continue
+            if not are_similar(path + "\\" + filenameA, path + "\\" + filenameB, similarity): continue
+            print("Bsim", filenameB)
+            moveList.append(filenameB)
+            lastNameMid = nameMid
+
+        dirname = "single"
+        if not lastNameMid == matchA.group(1):
+            dirname = "%03d" % dircounter
+            dircounter += 1
+        for filename in moveList:
+            moveToSubpath(filename, path, dirname)
+        moveList =[]
 
 
 def detectSimilarSelfMultiple(subpath=""):
-    inpath = _concatPath(subpath)
+    inpath = concatPath(subpath)
     for (dirpath, dirnames, filenames) in os.walk(inpath):
         if os.path.basename(dirpath) == "multiple": continue
         print(dirpath)
@@ -318,7 +285,7 @@ def detectSimilarSelfMultiple(subpath=""):
 
 
 def detectSimilar2SelfMultiple(startwith="", subpath=""):
-    inpath = _concatPath(subpath)
+    inpath = concatPath(subpath)
     for (dirpath, dirnames, filenames) in os.walk(inpath):
         if os.path.basename(dirpath) == "multiple": continue
         print(dirpath)
@@ -326,7 +293,7 @@ def detectSimilar2SelfMultiple(startwith="", subpath=""):
 
 
 def deleteNewNamesTxt(subpath=""):
-    inpath = _concatPath(subpath)
+    inpath = concatPath(subpath)
     for (dirpath, dirnames, filenames) in os.walk(inpath):
         filename = dirpath + "\\newNames.txt"
         if not os.path.isfile(filename): continue
@@ -334,18 +301,18 @@ def deleteNewNamesTxt(subpath=""):
 
 
 def renameTempBackAll():
-    inpath = _concatPath("")
-    matchreg = _renameTemp.temppostfix + '$'
+    inpath = concatPath("")
+    matchreg = renameTemp.temppostfix + '$'
     for (dirpath, dirnames, filenames) in os.walk(inpath):
         for filename in filenames:
             match = re.search(matchreg, filename)
             if not match: continue
             newFilename = re.sub(matchreg, '', filename)
-            _renameInPlace(dirpath, filename, newFilename)
+            renameInPlace(dirpath, filename, newFilename)
 
 
 def fixInitialNotNaturalSorting(write=False, year=2017, month=12, day=20, subpath=""):
-    inpath = _concatPath(subpath)
+    inpath = concatPath(subpath)
     lastNameMid = ""
     matchreg = r"([-\w +]+)_([0-9]+)."
     matchdate = dt.datetime(year, month, day)
@@ -362,7 +329,7 @@ def fixInitialNotNaturalSorting(write=False, year=2017, month=12, day=20, subpat
             if not nameMid == lastNameMid:
                 _fixInitialNotNaturalSorting(dirpath, lastNameMid, series, write)
                 series = []
-            if write: temp = _renameTempSingle(dirpath, filename)
+            if write: temp = renameTempSingle(dirpath, filename)
             series.append(filename + temp)
             lastNameMid = nameMid
         _fixInitialNotNaturalSorting(dirpath, lastNameMid, series, write)
@@ -371,7 +338,7 @@ def fixInitialNotNaturalSorting(write=False, year=2017, month=12, day=20, subpat
 def _fixInitialNotNaturalSorting(dirpath, lastNameMid, series, write):
     if len(series) < 10:
         for name in series:
-            if write: _renameTempBack(dirpath, name)
+            if write: renameTempBack(dirpath, name)
         return
     # series = series[0:1] + series[-8:] + series[1:-8]
     # series = series[0:1] + series[-1:] + series[2:-1] + series[1:2] #switch 2 and end
@@ -379,11 +346,11 @@ def _fixInitialNotNaturalSorting(dirpath, lastNameMid, series, write):
     for i, name in enumerate(series, start=1):
         newname = lastNameMid + "_%02d.jpg" % i
         print(name, newname)
-        if write: _renameInPlace(dirpath, name, newname)
+        if write: renameInPlace(dirpath, name, newname)
 
 
 def findSameNames():
-    inpath = _concatPath("")
+    inpath = concatPath("")
     fileDict = OrderedDict()
     for (dirpath, dirnames, filenames) in os.walk(inpath):
         for filename in filenames:
@@ -397,4 +364,4 @@ def findSameNames():
         for dirpath in fileDict[filename]:
             outstring += "\t" + dirpath
         outstring += "\n"
-    _writeToFile(inpath + "\\sameNames.txt", outstring)
+    writeToFile(inpath + "\\sameNames.txt", outstring)
