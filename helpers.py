@@ -1,5 +1,6 @@
 import os
 import re
+from natsort import natsorted
 
 
 def renameInPlace(dirpath, oldFilename, newFilename):
@@ -63,6 +64,15 @@ def moveToSubpath(filename, dirpath, subpath):
 def getFileNamesOfMainDir(path):
     for (dirpath, dirnames, filenames) in os.walk(path):
         return [filename for filename in filenames if ".jpg" in filename]
+
+
+def getFileNamesOfMainDir2(path, subpath=True):
+    out_filenames = []
+    for (dirpath, dirnames, filenames) in os.walk(path):
+        if not subpath and not dirpath == path: break
+        out_filenames.extend([(dirpath, filename) for filename in filenames if ".jpg" in filename])
+    out_filenames = natsorted(out_filenames, key = lambda x: x[1])
+    return out_filenames
 
 
 def isfile(*path):

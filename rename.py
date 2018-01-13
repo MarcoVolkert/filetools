@@ -236,11 +236,19 @@ def detectSimilar2(pathA, pathB="", startwith=""):
             moveToSubpath(filenameB, pathB, "multiple")
 
 
-def detectSimilarSeries(similarity=0.95):
+def detectSimilarSeries(similarity=0.95, checkSameName = True):
+
+    def getMainName(nameMid):
+        matchreg = r"([-\w +]+)_([0-9]+)"
+        match = re.search(matchreg, nameMid)
+        if match:
+            return match.group(1)
+        else:
+            return ""
+
     path = concatPath("")
     filenames = getFileNamesOfMainDir(path)
-    matchreg = r"([0-9]+)_([0-9]+)."
-
+    matchreg = r"([-\w +]+)_([0-9]+)."
     moveList=[]
     dircounter =1
     for i, filenameA in enumerate(filenames):
@@ -250,12 +258,16 @@ def detectSimilarSeries(similarity=0.95):
         if not matchA: continue
         print("A",filenameA)
         lastNameMid = matchA.group(1)
+        lastNameMain = getMainName(lastNameMid)
+
         moveList.append(filenameA)
         for j, filenameB in enumerate(filenames[i + 1:]):
             if not isfile(path, filenameA) or not isfile(path, filenameB): continue
             matchB = re.search(matchreg, filenameB)
             if not matchB: continue
             nameMid = matchB.group(1)
+            nameMain = getMainName(nameMid)
+            if checkSameName and not nameMain == lastNameMain: break
             namEnd = matchB.group(2)
             if nameMid == lastNameMid:
                 print("B", filenameB)
@@ -273,6 +285,58 @@ def detectSimilarSeries(similarity=0.95):
             dircounter += 1
         for filename in moveList:
             moveToSubpath(filename, path, dirname)
+        moveList =[]
+
+
+def detectSimilarSeries2(similarity=0.95, checkSameName = True, useSubPath=True):
+
+    def getMainName(nameMid):
+        matchreg = r"([-\w +]+)_([0-9]+)"
+        match = re.search(matchreg, nameMid)
+        if match:
+            return match.group(1)
+        else:
+            return ""
+
+    path = concatPath("")
+    filenames = getFileNamesOfMainDir2(path,useSubPath)
+    matchreg = r"([-\w +]+)_([0-9]+)."
+    moveList=[]
+    dircounter =1
+    for i, filenameA in enumerate(filenames):
+
+        if not isfile(*filenameA): continue
+        matchA = re.search(matchreg, filenameA[1])
+        if not matchA: continue
+        namEnd = matchA.group(2)
+        if not namEnd == "01": continue
+        print("A",filenameA[1])
+        lastNameMid = matchA.group(1)
+        lastNameMain = getMainName(lastNameMid)
+        moveList.append(filenameA)
+        for j, filenameB in enumerate(filenames[i + 1:]):
+            if not isfile(*filenameA) or not isfile(*filenameB): continue
+            matchB = re.search(matchreg, filenameB[1])
+            if not matchB: continue
+            nameMid = matchB.group(1)
+            nameMain = getMainName(nameMid)
+            if checkSameName and not nameMain == lastNameMain: break
+            namEnd = matchB.group(2)
+            if nameMid == lastNameMid:
+                print("B", filenameB[1])
+                moveList.append(filenameB)
+                continue
+            if not namEnd == "01": continue
+            if not are_similar(filenameA[0] + "\\" + filenameA[1], filenameB[0] + "\\" + filenameB[1], similarity): continue
+            print("Bsim", filenameB[1])
+            moveList.append(filenameB)
+            lastNameMid = nameMid
+
+        if not lastNameMid == matchA.group(1):
+            dirname = "%03d" % dircounter
+            dircounter += 1
+            for filename in moveList:
+                moveToSubpath(filename[1], filename[0], dirname)
         moveList =[]
 
 
