@@ -100,13 +100,13 @@ def normalizeCountersKeepName(subpath="", start=1, write=False, digits=2):
     if not write: writeToFile(inpath + "\\newNames.txt", outstring)
 
 
-def normalizeCountersMultiDirname(write=False, subpath="", digits=2):
+def normalizeCountersMultiDirname(prefix_name="", write=False, subpath="", digits=2):
     inpath = concatPath(subpath)
     for (dirpath, dirnames, filenames) in os.walk(inpath):
         if not inpath == dirpath: continue
         for dirname in dirnames:
             print("renameIndexNorm2Multi:", dirname)
-            normalizeCounters(dirname, dirname, 1, write, digits)
+            normalizeCounters(dirname, prefix_name+dirname, 1, write, digits)
 
 
 def normalizeCountersMulti(name="", write=False, subpath="", digits=2):
