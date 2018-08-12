@@ -77,3 +77,20 @@ def getFileNamesOfMainDir2(path, subpath=True):
 
 def isfile(*path):
     return os.path.isfile(os.path.join(*path))
+
+
+class Renamer:
+    outstring = ""
+
+    def __init__(self, write: bool, inpath: str):
+        self.write = write
+        self.inpath = inpath
+
+    def rename(self, dirpath, filename, newFilename):
+        if self.write:
+            renameInPlace(dirpath, filename, newFilename)
+        elif not filename == newFilename:
+            self.outstring += filename + "\t" + newFilename + "\n"
+
+    def close(self):
+        if not self.write: writeToFile(self.inpath + "\\newNames.txt", self.outstring)

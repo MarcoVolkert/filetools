@@ -90,9 +90,10 @@ def normalizeCountersKeepName(subpath="", start=1, write=False, digits=2):
             else:
                 fileCounter += 1
             newFilename = getNewName(nameMain, dirCounterDict[nameMain], fileCounter, digits)
-            if not filename == newFilename:
-                outstring += filename + "\t"+newFilename + "\n"
-                if write: renameInPlace(dirpath, filename, newFilename)
+            if write:
+                renameInPlace(dirpath, filename, newFilename)
+            elif not filename == newFilename:
+                outstring += filename + "\t" + newFilename + "\n"
             lastNameMain = nameMain
             lastNameMid = nameMid
             lastdirpath = dirpath
@@ -142,9 +143,10 @@ def normalizeCounters(subpath="", name="", start=1, write=False, digits=2):
             else:
                 fileCounter += 1
             newFilename = getNewName(name, dirCounter, fileCounter, digits)
-            if not filename == newFilename:
-                outstring += filename + "\t"+newFilename + "\n"
-                if write: renameInPlace(dirpath, filename, newFilename)
+            if write:
+                renameInPlace(dirpath, filename, newFilename)
+            elif not filename == newFilename:
+                outstring += filename + "\t" + newFilename + "\n"
             lastNameMid = nameMid
     if not write: writeToFile(inpath + "\\newNames.txt", outstring)
     return dirCounter
@@ -194,11 +196,10 @@ def normalizeCountersButKeepName(subpath="", name="", start=1, write=False, digi
                 dirCounterDict[nameMain] = dirCounter
             newFilename = getNewName(nameMain, dirCounter, fileCounter, digits)
 
-            if not filename == newFilename:
-                if write:
-                    renameInPlace(dirpath, filename, newFilename)
-                else:
-                    outstring += filename + "\t" + newFilename + "\n"
+            if write:
+                renameInPlace(dirpath, filename, newFilename)
+            elif not filename == newFilename:
+                outstring += filename + "\t" + newFilename + "\n"
             lastNameMain = nameMain
             lastNameMid = nameMid
             lastdirpath = dirpath
