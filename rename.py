@@ -14,10 +14,6 @@ from natsort import natsorted
 import datetime as dt
 from collections import OrderedDict
 from helpers import *
-# for reloading
-from IPython import get_ipython
-
-get_ipython().magic('reload_ext autoreload')
 
 
 def setCounters(name="", start=1, subpath=""):
@@ -55,7 +51,7 @@ def setCountersMulti2(start=1):
         if not inpath == dirpath: continue
         print(dirpath)
         for dirname in dirnames:
-            dirCounter=setCounters("",dirCounter, dirname)
+            dirCounter = setCounters("", dirCounter, dirname)
 
 
 def normalizeCountersKeepName(subpath="", start=1, write=False, digits=2):
@@ -106,7 +102,7 @@ def normalizeCountersMultiDirname(prefix_name="", write=False, subpath="", digit
         if not inpath == dirpath: continue
         for dirname in dirnames:
             print("renameIndexNorm2Multi:", dirname)
-            normalizeCounters(dirname, prefix_name+dirname, 1, write, digits)
+            normalizeCounters(dirname, prefix_name + dirname, 1, write, digits)
 
 
 def normalizeCountersMulti(name="", write=False, subpath="", digits=2):
@@ -167,7 +163,7 @@ def normalizeCountersButKeepName(subpath="", name="", start=1, write=False, digi
     if write: renameTemp(inpath)
     for (dirpath, dirnames, filenames) in os.walk(inpath):
         filenames = natsorted(filenames)
-        print(lastdirpath,dirpath)
+        print(lastdirpath, dirpath)
         for filename in filenames:
             matchName = re.search(matchregName, filename)
             match = re.search(matchreg, filename)
@@ -269,7 +265,7 @@ def detectSimilarSeries(similarity=0.95, checkSameName=True, useSubPath=True, su
     matchreg = r"([-\w +]+)_([0-9]+)."
     moveList = []
     dircounter = 1
-    outstring=""
+    outstring = ""
     for i, filenameA in enumerate(filenames):
 
         if not isfile(*filenameA): continue
@@ -296,7 +292,8 @@ def detectSimilarSeries(similarity=0.95, checkSameName=True, useSubPath=True, su
             if not namEnd == "01": continue
             if not are_similar(filenameA, filenameB, similarity): continue
             print("Bsim", filenameB[1])
-            outstring += filenameA[0]+os.path.sep+filenameA[1]+" "+filenameB[0]+os.path.sep+filenameB[1] + "\n"
+            outstring += filenameA[0] + os.path.sep + filenameA[1] + " " + filenameB[0] + os.path.sep + filenameB[
+                1] + "\n"
             moveList.append(filenameB)
             lastNameMid = nameMid
 
@@ -318,7 +315,7 @@ def detectSimilarSeriesPerFolder(similarity=0.95, checkSameName=False, useSubPat
             detectSimilarSeries(similarity, checkSameName, useSubPath, dirname)
 
 
-def concat_files(concat_filename = "similar.txt"):
+def concat_files(concat_filename="similar.txt"):
     """
     searches for a file named similar.txt in sub directories and writes the content of this
     to a file in the main directory

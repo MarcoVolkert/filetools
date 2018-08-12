@@ -15,10 +15,6 @@ from lxml import html
 import requests
 import os
 
-from IPython import get_ipython
-
-get_ipython().magic('reload_ext autoreload')
-
 
 def getHrefs(mainpage, subpage, css='', contains=''):
     page = requests.get(mainpage + subpage)
@@ -73,4 +69,3 @@ def downloadFile(picUrl, dest):
     filename = dest + '\\' + picUrl.split('/')[-1]
     with open(filename, 'wb') as f:
         f.write(page.content)
-
