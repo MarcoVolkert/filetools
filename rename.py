@@ -318,6 +318,26 @@ def detectSimilarSeriesPerFolder(similarity=0.95, checkSameName=False, useSubPat
             detectSimilarSeries(similarity, checkSameName, useSubPath, dirname)
 
 
+def concat_files(concat_filename = "similar.txt"):
+    """
+    searches for a file named similar.txt in sub directories and writes the content of this
+    to a file in the main directory
+    """
+    inpath = concatPath("")
+    outstring = "";
+    for (dirpath, dirnames, filenames) in os.walk(inpath):
+        if not inpath == dirpath: continue
+        for dirname in dirnames:
+            filename = dirname + os.sep + concat_filename
+            if not os.path.isfile(filename): continue
+            ifile = open(filename, "r")
+            for line in ifile.readlines():
+                outstring += line
+            ifile.close()
+            os.remove(filename)
+    writeToFile(inpath + os.sep + concat_filename, outstring)
+
+
 def detectSimilarSelfMultiple(subpath=""):
     inpath = concatPath(subpath)
     for (dirpath, dirnames, filenames) in os.walk(inpath):
