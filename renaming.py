@@ -9,7 +9,6 @@ __copyright__ = "Copyright 2017, Marco Volkert"
 __email__ = "marco.volkert24@gmx.de"
 __status__ = "Development"
 
-from natsort import natsorted
 import datetime as dt
 from helpers import *
 
@@ -265,6 +264,3 @@ def _fixInitialNotNaturalSorting(dirpath, lastNameMid, series, write):
         newname = lastNameMid + "_%02d.jpg" % i
         print(name, newname)
         if write: renameInPlace(dirpath, name, newname)
-
-
-

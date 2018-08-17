@@ -115,7 +115,7 @@ def concat_files(concat_filename="similar.txt"):
     to a file in the main directory
     """
     inpath = concatPath("")
-    outstring = "";
+    outstring = ""
     for (dirpath, dirnames, filenames) in os.walk(inpath):
         if not inpath == dirpath: continue
         for dirname in dirnames:
@@ -151,6 +151,7 @@ def deleteNewNamesTxt(subpath=""):
         filename = dirpath + "\\newNames.txt"
         if not os.path.isfile(filename): continue
         os.remove(filename)
+
 
 def findSameNames():
     inpath = concatPath("")
