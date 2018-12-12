@@ -1,0 +1,9 @@
+scikit-image
+scipy
+opencv-python
+numpy
+Pillow
+natsort
+send2trash
+lxml
+requests
