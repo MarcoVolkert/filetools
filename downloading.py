@@ -29,17 +29,17 @@ def downloadPics(mainpage, name, subSide="model", g_css='', g_contains='gallery'
                  p_contains=""):
     maindest = os.getcwd()
     mainname = mainpage.replace('http://', '').replace('.com', '')
-    namedest = maindest + mainname + '\\' + name
+    namedest = os.path.join(maindest, mainname, name)
     os.makedirs(namedest, exist_ok=True)
 
-    ofile = open(maindest + "download.txt", 'a')
+    ofile = open(os.path.join(maindest, "download.txt"), 'a')
     galleries = getHrefs(mainpage, '/' + subSide + '/' + name + '/', g_css, g_contains)
     for i, gallery in enumerate(galleries):
-        dest = namedest + '\\%03d' % i
+        dest = os.path.join(namedest, '%03d' % i)
         print(dest)
         os.makedirs(dest, exist_ok=True)
         pics = getHrefs(mainpage, gallery, p_css, p_contains)
-        ofile.write(name + " " + pics[0].split("/")[-1] + "\n")
+        ofile.write(" ".join([mainname, name, '%03d' % i, pics[0].split("/")[-1], gallery]) + "\n")
         for pic in pics:
             downloadFile(pic, dest)
     ofile.close()
@@ -54,7 +54,7 @@ def downloadPicsMulti(mainpage, names, subSide="model", g_css='', g_contains='ga
 def downloadPicsFromGallery(mainpage, subpage, css='[@class="fancybox"]', contains=""):
     maindest = os.getcwd()
     mainname = mainpage.replace('http://', '').replace('.com', '')
-    dest = maindest + mainname
+    dest = os.path.join(maindest, mainname)
     os.makedirs(dest, exist_ok=True)
 
     pics = getHrefs(mainpage, subpage, css, contains)
@@ -66,6 +66,6 @@ def downloadPicsFromGallery(mainpage, subpage, css='[@class="fancybox"]', contai
 
 def downloadFile(picUrl, dest):
     page = requests.get(picUrl)
-    filename = dest + '\\' + picUrl.split('/')[-1]
+    filename = os.path.join(dest, picUrl.split('/')[-1])
     with open(filename, 'wb') as f:
         f.write(page.content)
