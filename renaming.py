@@ -145,7 +145,7 @@ def normalizeCounters(subpath="", name="", start=1, write=False, digits=2):
     return dirCounter
 
 
-def normalizeCountersButKeepName(subpath="", name="", start=1, write=False, digits=2):
+def normalizeCountersButKeepName(subpath="", name="", start=1, write=False, digits=2, new_on_dirchange=True):
     inpath = concatPath(subpath)
     dirCounter = start - 1
     normalDirCounter = dirCounter
@@ -178,7 +178,8 @@ def normalizeCountersButKeepName(subpath="", name="", start=1, write=False, digi
                 print("no match", dirpath, filename)
                 if write: renameTempBack(dirpath, filename)
                 continue
-            if not nameMain == lastNameMain or not nameMid == lastNameMid or not lastdirpath == dirpath:
+            if not nameMain == lastNameMain or not nameMid == lastNameMid or (
+                    new_on_dirchange and not lastdirpath == dirpath):
                 dirCounter += 1
                 fileCounter = 1
             else:
