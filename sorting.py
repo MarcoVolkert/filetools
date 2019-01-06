@@ -101,7 +101,6 @@ def detectSimilarSeries(similarity=0.95, checkSameName=True, useSubPath=True, su
 
 
 def detectSimilarSeriesPerFolder(similarity=0.95, checkSameName=False, useSubPath=True):
-    # from name-surname to Name Surname
     inpath = concatPath("")
     for (dirpath, dirnames, filenames) in os.walk(inpath):
         if not inpath == dirpath: continue
