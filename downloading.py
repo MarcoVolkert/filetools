@@ -17,41 +17,55 @@ import os
 
 
 def getHrefs(mainpage, subpage, css='', contains=''):
+    print(mainpage + subpage)
     page = requests.get(mainpage + subpage)
     tree = html.fromstring(page.content)
     aList = tree.xpath('//a' + css)
     hrefs = [x.get("href") for x in aList]
-    hrefs = [x for x in hrefs if contains in x]
+    hrefs = [href for href in hrefs if href and contains in href]
+    hrefs = [href if mainpage in href else mainpage + href for href in hrefs]
     return hrefs
 
 
-def downloadPics(mainpage, name, subSide="model", g_css='', g_contains='gallery', p_css='[@class="fancybox"]',
-                 p_contains=""):
+def downloadPics(mainpage, name, subSide="", g_css='', g_contains='', p_css='', p_contains="",
+                 use_gallery_name=True):
     maindest = os.getcwd()
-    mainname = mainpage.replace('http://', '').replace('.com', '')
+    replacements = ['http://', 'www.', '.com', '.de']
+    mainname = mainpage
+    for replacement in replacements:
+        mainname = mainname.replace(replacement, '')
     namedest = os.path.join(maindest, mainname, name)
     os.makedirs(namedest, exist_ok=True)
 
     ofile = open(os.path.join(maindest, "download.txt"), 'a')
-    galleries = getHrefs(mainpage, '/' + subSide + '/' + name + '/', g_css, g_contains)
+    http_path = '/' + subSide + '/' + name
+    if not name.endswith("html"):
+        http_path += "/"
+    galleries = getHrefs(mainpage, http_path, g_css, g_contains)
     for i, gallery in enumerate(galleries):
-        dest = os.path.join(namedest, '%03d' % i)
+        if use_gallery_name:
+            gallery_name = gallery.split("/")[-1]
+        else:
+            gallery_name = '%03d' % i
+        dest = os.path.join(namedest, gallery_name)
         print(dest)
         os.makedirs(dest, exist_ok=True)
-        pics = getHrefs(mainpage, gallery, p_css, p_contains)
-        ofile.write(" ".join([mainname, name, '%03d' % i, pics[0].split("/")[-1], gallery]) + "\n")
+        pics = getHrefs(gallery, "", p_css, p_contains)
+        ofile.write(" ".join([mainname, name, gallery_name, pics[0].split("/")[-1], gallery]) + "\n")
         for pic in pics:
-            downloadFile(pic, dest)
+            if use_gallery_name:
+                downloadPdf(pic, dest)
+            else:
+                downloadFile(pic, dest)
     ofile.close()
 
 
-def downloadPicsMulti(mainpage, names, subSide="model", g_css='', g_contains='gallery', p_css='[@class="fancybox"]',
-                      p_contains=""):
+def downloadPicsMulti(mainpage, names, subSide="", g_css='', g_contains='', p_css='', p_contains=""):
     for name in names:
         downloadPics(mainpage, name, subSide, g_css, g_contains, p_css, p_contains)
 
 
-def downloadPicsFromGallery(mainpage, subpage, css='[@class="fancybox"]', contains=""):
+def downloadPicsFromGallery(mainpage, subpage, css='', contains=""):
     maindest = os.getcwd()
     mainname = mainpage.replace('http://', '').replace('.com', '')
     dest = os.path.join(maindest, mainname)
@@ -67,5 +81,16 @@ def downloadPicsFromGallery(mainpage, subpage, css='[@class="fancybox"]', contai
 def downloadFile(picUrl, dest):
     page = requests.get(picUrl)
     filename = os.path.join(dest, picUrl.split('/')[-1])
+    with open(filename, 'wb') as f:
+        f.write(page.content)
+
+
+def downloadPdf(picUrl, dest):
+    cookies = {"JSESSIONID": "3E7441071E5F19B7BC352A2A951F06B2.springboard3",
+               "spr_prophy_cookie": "true",
+               "springboard_user": "NG8zbzR2NDIxY3ZkanIxaG0x"}
+    print(picUrl)
+    page = requests.get(picUrl, cookies=cookies)
+    filename = os.path.join(dest, picUrl.split('/')[-2] + ".pdf")
     with open(filename, 'wb') as f:
         f.write(page.content)
