@@ -9,9 +9,10 @@ __copyright__ = "Copyright 2017, Marco Volkert"
 __email__ = "marco.volkert24@gmx.de"
 __status__ = "Development"
 
-from compare import are_similar
 from collections import OrderedDict
-from helpers import *
+
+from .compare import are_similar
+from .helpers import *
 
 
 def detectSimilar(pathA, pathB=""):

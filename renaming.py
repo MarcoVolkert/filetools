@@ -10,7 +10,8 @@ __email__ = "marco.volkert24@gmx.de"
 __status__ = "Development"
 
 import datetime as dt
-from helpers import *
+
+from .helpers import *
 
 
 def setCounters(name="", start=1, subpath=""):
