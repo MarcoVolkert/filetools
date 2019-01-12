@@ -108,4 +108,6 @@ def _url_to_filename(url, part=-1, ext="") -> str:
     filename = url.split('/')[part]
     if ext:
         filename = filename.rsplit(".", 1)[0] + ext
+    if not filename:
+        filename = "index.html"
     return filename
