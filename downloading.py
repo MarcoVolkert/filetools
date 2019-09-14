@@ -16,16 +16,16 @@ import requests
 import os
 
 
-def getHrefs(page, css='', contains=''):
-    tree = html.fromstring(get_page_content(page))
-    aList = tree.xpath('//a' + css)
+def getHrefs(page, xpath='//a', contains='', headers=None, cookies=None):
+    tree = html.fromstring(get_page_content(page, headers=headers, cookies=cookies))
+    aList = tree.xpath(xpath)
     hrefs = [x.get("href") for x in aList]
     hrefs = [href for href in hrefs if href and contains in href]
     return hrefs
 
 
-def downloadFiles(mainpage, name, subSide="", g_css='', g_contains='', f_css='', f_contains="",
-                  g_part=None, f_part=-1, ext=""):
+def downloadFiles(mainpage, name, subSide="", g_xpath='//a', g_contains='', f_xpath='//a', f_contains="",
+                  g_part=None, f_part=-1, ext="", cookies=None):
     maindest = os.getcwd()
     mainname = _strip_url(mainpage)
     namedest = os.path.join(maindest, mainname, name.replace('/', '-'))
@@ -33,7 +33,7 @@ def downloadFiles(mainpage, name, subSide="", g_css='', g_contains='', f_css='',
 
     ofile = open(os.path.join(maindest, "download.txt"), 'a')
     http_path = _build_http_path(name, subSide)
-    galleries = getHrefs(mainpage + http_path, g_css, g_contains)
+    galleries = getHrefs(mainpage + http_path, g_xpath, g_contains)
     for i, gallery in enumerate(galleries):
         if g_part:
             gallery_name = gallery.split("/")[g_part]
@@ -42,52 +42,60 @@ def downloadFiles(mainpage, name, subSide="", g_css='', g_contains='', f_css='',
         dest = os.path.join(namedest, gallery_name)
         print(dest)
         os.makedirs(dest, exist_ok=True)
-        downloadFile(mainpage + gallery, dest)
-        fileUrls = getHrefs(mainpage + gallery, f_css, f_contains)
+        galleryUrl = createUrl(gallery, mainpage)
+        downloadFile(galleryUrl, dest, cookies=cookies)
+        fileUrls = getHrefs(galleryUrl, f_xpath, f_contains)
         ofile.write(" ".join([mainname, name, gallery_name, fileUrls[0].split("/")[f_part], gallery]) + "\n")
         for fileUrl in fileUrls:
-            if mainpage not in fileUrl:
-                fileUrl = mainpage + fileUrl
-            downloadFile(fileUrl, dest, f_part, ext)
+            fileUrl = createUrl(fileUrl, mainpage)
+            downloadFile(fileUrl, dest, f_part, ext, headers={'Referer': galleryUrl}, cookies=cookies)
     ofile.close()
 
 
-def downloadFilesMulti(mainpage, names, subSide="", g_css='', g_contains='', f_css='', f_contains=""):
+def downloadFilesMulti(mainpage, names, subSide="", g_xpath='//a', g_contains='', f_xpath='//a', f_contains="",
+                       cookies=None):
     for name in names:
-        downloadFiles(mainpage, name, subSide, g_css, g_contains, f_css, f_contains)
+        downloadFiles(mainpage, name, subSide, g_xpath, g_contains, f_xpath, f_contains, cookies=cookies)
 
 
-def downloadFilesFromGallery(mainpage, subpage, css='', contains=""):
+def downloadFilesFromGallery(mainpage, subpage, xpath='', contains="", cookies=None):
     maindest = os.getcwd()
     mainname = _strip_url(mainpage)
     dest = os.path.join(maindest, mainname)
     os.makedirs(dest, exist_ok=True)
 
-    pics = getHrefs(mainpage + subpage, css, contains)
+    galleryUrl = mainpage + subpage
+    fileUrls = getHrefs(galleryUrl, xpath, contains)
     os.makedirs(dest, exist_ok=True)
-    for pic in pics:
-        downloadFile(pic, dest)
+    for fileUrl in fileUrls:
+        fileUrl = createUrl(fileUrl, mainpage)
+        downloadFile(fileUrl, dest, headers={'Referer': galleryUrl}, cookies=cookies)
 
 
-def downloadFile(url, dest, part=-1, ext=""):
+def createUrl(url, mainpage):
+    if not url.startswith('http'):
+        return mainpage + url
+    return url
+
+
+def downloadFile(url, dest, part=-1, ext="", headers=None, cookies=None):
     filename = os.path.join(dest, _url_to_filename(url, part, ext))
     with open(filename, 'wb') as f:
-        f.write(get_page_content(url))
+        f.write(get_page_content(url, headers, cookies))
 
 
-def get_page_content(url):
+def get_page_content(url, headers=None, cookies=None):
+    if headers is None:
+        headers = {}
+    if cookies is None:
+        cookies = {}
     print("get: " + url)
-    page = requests.get(url, cookies=get_page_content.cookies)
+    page = requests.get(url, cookies=cookies, headers=headers)
     return page.content
 
 
-get_page_content.cookies = {"JSESSIONID": "3E7441071E5F19B7BC352A2A951F06B2.springboard3",
-                            "spr_prophy_cookie": "true",
-                            "springboard_user": "NG8zbzR2NDIxY3ZkanIxaG0x"}
-
-
 def _strip_url(url):
-    replacements = ['http://', 'www.', '.com', '.de']
+    replacements = ['http://', 'https://', 'www.', '.com', '.de']
     name = url
     for replacement in replacements:
         name = name.replace(replacement, '')
