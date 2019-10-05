@@ -57,7 +57,7 @@ def setCountersMulti2(start=1):
             dirCounter = setCounters("", dirCounter, dirname)
 
 
-def normalizeCountersKeepName(subpath="", start=1, write=False, digits=2):
+def normalizeCountersKeepName(subpath="", start=1, write=False, digits=2, increment=1):
     inpath = concatPath(subpath)
     fileCounter = 1
     lastNameMain = ""
@@ -79,12 +79,12 @@ def normalizeCountersKeepName(subpath="", start=1, write=False, digits=2):
             nameMid = match.group(2)
             if not nameMain == lastNameMain:
                 if nameMain in dirCounterDict:
-                    dirCounterDict[nameMain] += 1
+                    dirCounterDict[nameMain] += increment
                 else:
                     dirCounterDict[nameMain] = start
                 fileCounter = 1
             elif not nameMid == lastNameMid or not lastdirpath == dirpath:
-                dirCounterDict[nameMain] += 1
+                dirCounterDict[nameMain] += increment
                 fileCounter = 1
             else:
                 fileCounter += 1
