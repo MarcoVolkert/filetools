@@ -3,6 +3,7 @@
 """
 collection of rename operations
 """
+from typing import Iterable
 
 __author__ = "Marco Volkert"
 __copyright__ = "Copyright 2017, Marco Volkert"
@@ -12,6 +13,8 @@ __status__ = "Development"
 import datetime as dt
 
 from .helpers import *
+
+file_types = (".JPG", ".jpg", ".tif", ".tiff", ".hdr", ".exr", ".ufo", ".fpx", ".RW2", ".Raw")
 
 
 def setCounters(name="", start=1, subpath=""):
@@ -24,6 +27,8 @@ def setCounters(name="", start=1, subpath=""):
         fileCounter = 1
         filenames = natsorted(filenames)
         for filename in filenames:
+            if not _file_has_ext(filename, file_types):
+                continue
             newFilename = getNewName(name, dirCounter, fileCounter)
             os.rename(os.path.join(dirpath, filename), os.path.join(inpath, newFilename))
             fileCounter += 1
@@ -266,3 +271,13 @@ def _fixInitialNotNaturalSorting(dirpath, lastNameMid, series, write):
         newname = lastNameMid + "_%02d.jpg" % i
         print(name, newname)
         if write: renameInPlace(dirpath, name, newname)
+
+
+def _file_has_ext(filename: str, file_extensions: Iterable, ignore_case=True) -> bool:
+    for fileext in file_extensions:
+        if ignore_case:
+            fileext = fileext.lower()
+            filename = filename.lower()
+        if fileext == filename[filename.rfind("."):]:
+            return True
+    return False
