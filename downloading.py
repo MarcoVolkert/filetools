@@ -25,7 +25,7 @@ def getHrefs(page, xpath='//a', contains='', headers=None, cookies=None):
 
 
 def downloadFiles(mainpage, name, subSide="", g_xpath='//a', g_contains='', f_xpath='//a', f_contains="",
-                  g_part=None, f_part=-1, ext="", cookies=None):
+                  g_part=None, f_part=-1, ext="", cookies=None, paginator=""):
     maindest = os.getcwd()
     mainname = _strip_url(mainpage)
     namedest = os.path.join(maindest, mainname, name.replace('/', '-'))
@@ -34,6 +34,12 @@ def downloadFiles(mainpage, name, subSide="", g_xpath='//a', g_contains='', f_xp
     ofile = open(os.path.join(maindest, "download.txt"), 'a')
     http_path = _build_http_path(name, subSide)
     galleries = getHrefs(mainpage + http_path, g_xpath, g_contains)
+    if paginator:
+        paginationHrefs = getHrefs(mainpage + http_path, paginator)
+        for paginationHref in paginationHrefs:
+            paginationUrl = createUrl(paginationHref, mainpage)
+            galleries += getHrefs(paginationUrl, g_xpath, g_contains)
+
     for i, gallery in enumerate(galleries):
         if g_part:
             gallery_name = gallery.split("/")[g_part]
@@ -53,9 +59,12 @@ def downloadFiles(mainpage, name, subSide="", g_xpath='//a', g_contains='', f_xp
 
 
 def downloadFilesMulti(mainpage, names, subSide="", g_xpath='//a', g_contains='', f_xpath='//a', f_contains="",
-                       cookies=None):
+                       g_part=None, f_part=-1, ext="", cookies=None, paginator=""):
     for name in names:
-        downloadFiles(mainpage, name, subSide, g_xpath, g_contains, f_xpath, f_contains, cookies=cookies)
+        downloadFiles(mainpage=mainpage, name=name, subSide=subSide, g_xpath=g_xpath, g_contains=g_contains,
+                      f_xpath=f_xpath, f_contains=f_contains,
+                      g_part=g_part, f_part=f_part, ext=ext, cookies=cookies,
+                      paginator=paginator)
 
 
 def downloadFilesFromGallery(mainpage, subpage, xpath='', contains="", cookies=None):
@@ -91,6 +100,8 @@ def get_page_content(url, headers=None, cookies=None):
         cookies = {}
     print("get: " + url)
     page = requests.get(url, cookies=cookies, headers=headers)
+    if page.status_code != 200:
+        print("error in get " + url + " : " + page.status_code + "" + page.reason)
     return page.content
 
 
