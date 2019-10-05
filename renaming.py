@@ -63,7 +63,7 @@ def normalizeCountersKeepName(subpath="", start=1, write=False, digits=2, increm
     lastNameMain = ""
     lastNameMid = ""
     lastdirpath = ""
-    matchreg = r"^([-\w +]+)_([ALS]{0,3}[0-9]+)[+]?_([0-9]+)"
+    matchreg = r"^([-\w +]+)_([A-Z]{0,3}[0-9]+)[+]?_([0-9]+)"
     outstring = ""
     dirCounterDict = dict()
     if write: renameTemp(inpath)
@@ -123,7 +123,7 @@ def normalizeCounters(subpath="", name="", start=1, write=False, digits=2):
     fileCounter = 1
     lastNameMid = ""
     outstring = ""
-    matchreg = r"([0-9]+)_([0-9]+)."
+    matchreg = r"([0-9]+)(?:_|-)([0-9]+)."
     if write: renameTemp(inpath)
     for (dirpath, dirnames, filenames) in os.walk(inpath):
         print("renameIndexNorm2:", dirpath)
@@ -159,7 +159,7 @@ def normalizeCountersButKeepName(subpath="", name="", start=1, write=False, digi
     lastNameMain = name
     lastNameMid = ""
     lastdirpath = ""
-    matchregName = r"^([-\w +]+)_([ALS]{0,3}[0-9]+)[+]?_([0-9]+)"
+    matchregName = r"^([-\w +]+)_([A-Z]{0,3}[0-9]+)[+]?_([0-9]+)"
     matchreg = r"([0-9]+)_([0-9]+)."
     outstring = ""
     dirCounterDict = dict()
