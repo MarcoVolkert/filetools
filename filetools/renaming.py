@@ -16,6 +16,10 @@ from .helpers import *
 
 file_types = (".JPG", ".jpg", ".tif", ".tiff", ".hdr", ".exr", ".ufo", ".fpx", ".RW2", ".Raw")
 
+__all__ = ["setCounters", "setCountersMulti", "setCountersMulti2", "normalizeCounters", "normalizeCountersButKeepName",
+           "normalizeCountersKeepName", "normalizeCountersMulti", "normalizeCountersMultiDirname", "foldersToUpper",
+           "renameTempBack", "renameTempBackAll", "fixInitialNotNaturalSorting"]
+
 
 def setCounters(name="", start=1, subpath="") -> int:
     inpath = concatPath(subpath)

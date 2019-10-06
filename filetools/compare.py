@@ -6,6 +6,8 @@ import numpy as np
 import cv2
 import os
 
+__all__ = ["are_similar"]
+
 
 def is_blurry(filename: str, threshold=100):
     image = read_picture(filename)

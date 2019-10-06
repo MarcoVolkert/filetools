@@ -16,6 +16,8 @@ from lxml import html
 import requests
 import os
 
+__all__ = ["downloadFiles", "downloadFilesFromGallery", "downloadFilesMulti", "firstAndLazyLoaded"]
+
 
 def getHrefs(page, xpath='//a', contains='', headers=None, cookies=None) -> List[str]:
     tree = html.fromstring(get_page_content(page, headers=headers, cookies=cookies))

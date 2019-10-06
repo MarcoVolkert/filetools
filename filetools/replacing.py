@@ -1,6 +1,8 @@
 import csv
 import os
 
+__all__ = ["replace"]
+
 
 def replace(reverse=False):
     csv_filename = "mapping.csv"
@@ -23,5 +25,3 @@ def replace(reverse=False):
                             outlines.append(line)
                     with open(filename, "w") as file:
                         file.writelines(outlines)
-
-

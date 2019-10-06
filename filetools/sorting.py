@@ -14,6 +14,9 @@ from collections import OrderedDict
 from .compare import are_similar
 from .helpers import *
 
+__all__ = ["detectSimilar", "detectSimilar2", "detectSimilarSeries", "detectSimilar2SelfMultiple",
+           "detectSimilarSelfMultiple", "detectSimilarSeriesPerFolder", "deleteNewNamesTxt", "findSameNames"]
+
 
 def detectSimilar(pathA: str, pathB=""):
     if not pathB: pathB = pathA

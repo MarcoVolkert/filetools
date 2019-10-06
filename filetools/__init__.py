@@ -9,3 +9,8 @@ __email__ = "marco.volkert24@gmx.de"
 __status__ = "Development"
 
 __all__ = ["renaming", "sorting", "downloading", "replacing"]
+
+from filetools.renaming import *
+from filetools.sorting import *
+from filetools.downloading import *
+from filetools.replacing import *
