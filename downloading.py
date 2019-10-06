@@ -5,6 +5,7 @@ collection of download operations
 http://docs.python-guide.org/en/latest/scenarios/scrape/
 http://stackabuse.com/download-files-with-python/
 """
+from typing import List
 
 __author__ = "Marco Volkert"
 __copyright__ = "Copyright 2017, Marco Volkert"
@@ -16,10 +17,10 @@ import requests
 import os
 
 
-def getHrefs(page, xpath='//a', contains='', headers=None, cookies=None):
+def getHrefs(page, xpath='//a', contains='', headers=None, cookies=None) -> List[str]:
     tree = html.fromstring(get_page_content(page, headers=headers, cookies=cookies))
     aList = tree.xpath(xpath)
-    hrefs = [x.get("href") for x in aList]
+    hrefs = [x.get("href") if x.get("href") else x.get("src") for x in aList]
     hrefs = [href for href in hrefs if href and contains in href]
     return hrefs
 
@@ -81,19 +82,36 @@ def downloadFilesFromGallery(mainpage, subpage, xpath='', contains="", cookies=N
         downloadFile(fileUrl, dest, headers={'Referer': galleryUrl}, cookies=cookies)
 
 
-def createUrl(url, mainpage):
+def firstAndLazyLoaded(mainpage, dirname, xpath='', contains="", cookies=None):
+    maindest = os.getcwd()
+    dest = os.path.join(maindest, dirname)
+    os.makedirs(dest, exist_ok=True)
+
+    fileUrls = getHrefs(mainpage, xpath, contains)
+    fileUrl = fileUrls[0]
+    for i in range(0, 100):
+        contains_sub = contains.replace('0', i.__str__())
+        fileUrl_new = fileUrl.replace(contains, contains_sub)
+        try:
+            downloadFile(fileUrl_new, dest, headers={'Referer': mainpage}, cookies=cookies)
+        except Exception:
+            break
+
+
+def createUrl(url, mainpage) -> str:
     if not url.startswith('http'):
         return mainpage + url
     return url
 
 
-def downloadFile(url, dest, part=-1, ext="", headers=None, cookies=None):
+def downloadFile(url, dest, part=-1, ext="", headers=None, cookies=None, doThrow=False):
+    page_content = get_page_content(url, headers, cookies, doThrow)
     filename = os.path.join(dest, _url_to_filename(url, part, ext))
     with open(filename, 'wb') as f:
-        f.write(get_page_content(url, headers, cookies))
+        f.write(page_content)
 
 
-def get_page_content(url, headers=None, cookies=None):
+def get_page_content(url, headers=None, cookies=None, doThrow=False):
     if headers is None:
         headers = {}
     if cookies is None:
@@ -102,6 +120,8 @@ def get_page_content(url, headers=None, cookies=None):
     page = requests.get(url, cookies=cookies, headers=headers)
     if page.status_code != 200:
         print("error in get " + url + " : " + page.status_code + "" + page.reason)
+        if doThrow:
+            raise Exception
     return page.content
 
 
@@ -125,6 +145,7 @@ def _build_http_path(name, subSide="") -> str:
 
 def _url_to_filename(url, part=-1, ext="") -> str:
     filename = url.split('/')[part]
+    filename = filename[:filename.rfind("?")]
     if ext:
         filename = filename.rsplit(".", 1)[0] + ext
     if not filename:
