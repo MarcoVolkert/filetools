@@ -8,4 +8,4 @@ __copyright__ = "Copyright 2018, Marco Volkert"
 __email__ = "marco.volkert24@gmx.de"
 __status__ = "Development"
 
-__all__ = ["renaming", "sorting", "downloading"]
+__all__ = ["renaming", "sorting", "downloading", "replacing"]
