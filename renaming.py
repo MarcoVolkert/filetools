@@ -17,7 +17,7 @@ from .helpers import *
 file_types = (".JPG", ".jpg", ".tif", ".tiff", ".hdr", ".exr", ".ufo", ".fpx", ".RW2", ".Raw")
 
 
-def setCounters(name="", start=1, subpath=""):
+def setCounters(name="", start=1, subpath="") -> int:
     inpath = concatPath(subpath)
     if name: inpath += os.path.sep + name
     dirCounter = start
@@ -117,7 +117,7 @@ def normalizeCountersMulti(name="", write=False, subpath="", digits=2):
             dirCounter = normalizeCounters(dirname, name, dirCounter + 1, write, digits)
 
 
-def normalizeCounters(subpath="", name="", start=1, write=False, digits=2):
+def normalizeCounters(subpath="", name="", start=1, write=False, digits=2) -> int:
     inpath = concatPath(subpath)
     dirCounter = start - 1
     fileCounter = 1

@@ -1,5 +1,7 @@
 import os
 import re
+from typing import List
+
 from natsort import natsorted
 
 
@@ -30,7 +32,7 @@ def renameTempBack(dirpath, filename):
     renameInPlace(dirpath, filename, newFilename)
 
 
-def concatPath(subpath):
+def concatPath(subpath) -> str:
     if not subpath == "": subpath = os.path.sep + subpath
     fullpath = os.getcwd() + subpath
     if not os.path.isdir(fullpath):
@@ -40,7 +42,7 @@ def concatPath(subpath):
     return fullpath
 
 
-def getNewName(name, dirCounter, fileCounter, digits=2):
+def getNewName(name, dirCounter, fileCounter, digits=2) -> str:
     if name: name += "_"
     return name + ("%0" + str(digits) + "d_%02d") % (dirCounter, fileCounter) + ".jpg"
 
@@ -66,7 +68,7 @@ def getFileNamesOfMainDir(path):
         return [filename for filename in filenames if ".jpg" in filename]
 
 
-def getFileNamesOfMainDir2(path, subpath=True):
+def getFileNamesOfMainDir2(path, subpath=True) -> List[str]:
     out_filenames = []
     for (dirpath, dirnames, filenames) in os.walk(path):
         if not subpath and not dirpath == path: break
@@ -75,7 +77,7 @@ def getFileNamesOfMainDir2(path, subpath=True):
     return out_filenames
 
 
-def isfile(*path):
+def isfile(*path) -> bool:
     return os.path.isfile(os.path.join(*path))
 
 

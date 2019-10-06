@@ -5,7 +5,7 @@ collection of download operations
 http://docs.python-guide.org/en/latest/scenarios/scrape/
 http://stackabuse.com/download-files-with-python/
 """
-from typing import List
+from typing import List, Optional
 
 __author__ = "Marco Volkert"
 __copyright__ = "Copyright 2017, Marco Volkert"
@@ -111,7 +111,7 @@ def downloadFile(url, dest, part=-1, ext="", headers=None, cookies=None, doThrow
         f.write(page_content)
 
 
-def get_page_content(url, headers=None, cookies=None, doThrow=False):
+def get_page_content(url, headers=None, cookies=None, doThrow=False) -> Optional[bytes]:
     if headers is None:
         headers = {}
     if cookies is None:
@@ -125,7 +125,7 @@ def get_page_content(url, headers=None, cookies=None, doThrow=False):
     return page.content
 
 
-def _strip_url(url):
+def _strip_url(url) -> str:
     replacements = ['http://', 'https://', 'www.', '.com', '.de']
     name = url
     for replacement in replacements:
