@@ -15,7 +15,7 @@ from .compare import are_similar
 from .helpers import *
 
 
-def detectSimilar(pathA, pathB=""):
+def detectSimilar(pathA: str, pathB=""):
     if not pathB: pathB = pathA
     filenamesA = getFileNamesOfMainDir(pathA)
     filenamesB = getFileNamesOfMainDir(pathB)
@@ -30,7 +30,7 @@ def detectSimilar(pathA, pathB=""):
             moveToSubpath(filenameB, pathB, "multiple")
 
 
-def detectSimilar2(pathA, pathB="", startwith=""):
+def detectSimilar2(pathA: str, pathB="", startwith=""):
     if not pathB: pathB = pathA
     filenamesA = getFileNamesOfMainDir(pathA)
     filenamesB = getFileNamesOfMainDir(pathB)

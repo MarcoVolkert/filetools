@@ -25,7 +25,7 @@ def getHrefs(page, xpath='//a', contains='', headers=None, cookies=None) -> List
     return hrefs
 
 
-def downloadFiles(mainpage, name, subSide="", g_xpath='//a', g_contains='', f_xpath='//a', f_contains="",
+def downloadFiles(mainpage: str, name: str, subSide="", g_xpath='//a', g_contains='', f_xpath='//a', f_contains="",
                   g_part=None, f_part=-1, ext="", cookies=None, paginator=""):
     maindest = os.getcwd()
     mainname = _strip_url(mainpage)
@@ -59,8 +59,8 @@ def downloadFiles(mainpage, name, subSide="", g_xpath='//a', g_contains='', f_xp
     ofile.close()
 
 
-def downloadFilesMulti(mainpage, names, subSide="", g_xpath='//a', g_contains='', f_xpath='//a', f_contains="",
-                       g_part=None, f_part=-1, ext="", cookies=None, paginator=""):
+def downloadFilesMulti(mainpage: str, names: str, subSide="", g_xpath='//a', g_contains='', f_xpath='//a',
+                       f_contains="", g_part=None, f_part=-1, ext="", cookies=None, paginator=""):
     for name in names:
         downloadFiles(mainpage=mainpage, name=name, subSide=subSide, g_xpath=g_xpath, g_contains=g_contains,
                       f_xpath=f_xpath, f_contains=f_contains,
@@ -68,7 +68,7 @@ def downloadFilesMulti(mainpage, names, subSide="", g_xpath='//a', g_contains=''
                       paginator=paginator)
 
 
-def downloadFilesFromGallery(mainpage, subpage, xpath='', contains="", cookies=None):
+def downloadFilesFromGallery(mainpage: str, subpage: str, xpath='', contains="", cookies=None):
     maindest = os.getcwd()
     mainname = _strip_url(mainpage)
     dest = os.path.join(maindest, mainname)
@@ -82,7 +82,7 @@ def downloadFilesFromGallery(mainpage, subpage, xpath='', contains="", cookies=N
         downloadFile(fileUrl, dest, headers={'Referer': galleryUrl}, cookies=cookies)
 
 
-def firstAndLazyLoaded(mainpage, dirname, xpath='', contains="", cookies=None):
+def firstAndLazyLoaded(mainpage: str, dirname: str, xpath='', contains="", cookies=None):
     maindest = os.getcwd()
     dest = os.path.join(maindest, dirname)
     os.makedirs(dest, exist_ok=True)
@@ -98,20 +98,20 @@ def firstAndLazyLoaded(mainpage, dirname, xpath='', contains="", cookies=None):
             break
 
 
-def createUrl(url, mainpage) -> str:
+def createUrl(url: str, mainpage: str) -> str:
     if not url.startswith('http'):
         return mainpage + url
     return url
 
 
-def downloadFile(url, dest, part=-1, ext="", headers=None, cookies=None, doThrow=False):
+def downloadFile(url: str, dest: str, part=-1, ext="", headers=None, cookies=None, doThrow=False):
     page_content = get_page_content(url, headers, cookies, doThrow)
     filename = os.path.join(dest, _url_to_filename(url, part, ext))
     with open(filename, 'wb') as f:
         f.write(page_content)
 
 
-def get_page_content(url, headers=None, cookies=None, doThrow=False) -> Optional[bytes]:
+def get_page_content(url: str, headers=None, cookies=None, doThrow=False) -> Optional[bytes]:
     if headers is None:
         headers = {}
     if cookies is None:
@@ -125,7 +125,7 @@ def get_page_content(url, headers=None, cookies=None, doThrow=False) -> Optional
     return page.content
 
 
-def _strip_url(url) -> str:
+def _strip_url(url: str) -> str:
     replacements = ['http://', 'https://', 'www.', '.com', '.de']
     name = url
     for replacement in replacements:
@@ -133,7 +133,7 @@ def _strip_url(url) -> str:
     return name
 
 
-def _build_http_path(name, subSide="") -> str:
+def _build_http_path(name: str, subSide="") -> str:
     http_path = '/'
     if subSide:
         http_path += subSide + '/'
@@ -143,7 +143,7 @@ def _build_http_path(name, subSide="") -> str:
     return http_path
 
 
-def _url_to_filename(url, part=-1, ext="") -> str:
+def _url_to_filename(url: str, part=-1, ext="") -> str:
     filename = url.split('/')[part]
     filename = filename[:filename.rfind("?")]
     if ext:

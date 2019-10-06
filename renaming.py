@@ -259,7 +259,7 @@ def fixInitialNotNaturalSorting(write=False, year=2017, month=12, day=20, subpat
         _fixInitialNotNaturalSorting(dirpath, lastNameMid, series, write)
 
 
-def _fixInitialNotNaturalSorting(dirpath, lastNameMid, series, write):
+def _fixInitialNotNaturalSorting(dirpath: str, lastNameMid: str, series: List[str], write: bool):
     if len(series) < 10:
         for name in series:
             if write: renameTempBack(dirpath, name)

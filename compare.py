@@ -7,13 +7,13 @@ import cv2
 import os
 
 
-def is_blurry(filename, threshold=100):
+def is_blurry(filename: str, threshold=100):
     image = read_picture(filename)
     if image is None: return False
     return variance_of_laplacian(image) < threshold
 
 
-def are_similar(filenameA, filenameB, threshold=0.9):
+def are_similar(filenameA: str, filenameB: str, threshold=0.9):
     imageA = read_picture(filenameA, 20)
     imageB = read_picture(filenameB, 20)
     if imageA is None or imageB is None: return False
