@@ -28,7 +28,7 @@ def getHrefs(page, xpath='//a', contains='', headers=None, cookies=None) -> List
 
 
 def downloadFiles(mainpage: str, name: str, subSide="", g_xpath='//a', g_contains='', f_xpath='//a', f_contains="",
-                  g_part=None, f_part=-1, ext="", cookies=None, paginator=""):
+                  g_part=None, f_part=-1, ext="", cookies=None, paginator="", take_gallery_title=False):
     maindest = os.getcwd()
     mainname = _strip_url(mainpage)
     namedest = os.path.join(maindest, mainname, name.replace('/', '-'))
@@ -52,22 +52,32 @@ def downloadFiles(mainpage: str, name: str, subSide="", g_xpath='//a', g_contain
         print(dest)
         os.makedirs(dest, exist_ok=True)
         galleryUrl = createUrl(gallery, mainpage)
+        if take_gallery_title:
+            gallery_title = os.path.join(dest, _url_to_filename(galleryUrl, f_part))
+        else:
+            gallery_title = ''
         downloadFile(galleryUrl, dest, cookies=cookies)
         fileUrls = getHrefs(galleryUrl, f_xpath, f_contains)
         ofile.write(" ".join([mainname, name, gallery_name, fileUrls[0].split("/")[f_part], gallery]) + "\n")
-        for fileUrl in fileUrls:
+        for j, fileUrl in enumerate(fileUrls):
             fileUrl = createUrl(fileUrl, mainpage)
-            downloadFile(fileUrl, dest, f_part, ext, headers={'Referer': galleryUrl}, cookies=cookies)
+            if len(fileUrls) > 1 and gallery_title:
+                filename = gallery_title + '_%03d' % j
+            else:
+                filename = gallery_title
+            downloadFile(fileUrl, dest, f_part, ext, headers={'Referer': galleryUrl}, cookies=cookies,
+                         filename=filename)
     ofile.close()
 
 
-def downloadFilesMulti(mainpage: str, names: str, subSide="", g_xpath='//a', g_contains='', f_xpath='//a',
-                       f_contains="", g_part=None, f_part=-1, ext="", cookies=None, paginator=""):
+def downloadFilesMulti(mainpage: str, names: List[str], subSide="", g_xpath='//a', g_contains='', f_xpath='//a',
+                       f_contains="", g_part=None, f_part=-1, ext="", cookies=None, paginator="",
+                       take_gallery_title=False):
     for name in names:
         downloadFiles(mainpage=mainpage, name=name, subSide=subSide, g_xpath=g_xpath, g_contains=g_contains,
                       f_xpath=f_xpath, f_contains=f_contains,
                       g_part=g_part, f_part=f_part, ext=ext, cookies=cookies,
-                      paginator=paginator)
+                      paginator=paginator, take_gallery_title=take_gallery_title)
 
 
 def downloadFilesFromGallery(mainpage: str, subpage: str, xpath='', contains="", cookies=None):
@@ -106,9 +116,12 @@ def createUrl(url: str, mainpage: str) -> str:
     return url
 
 
-def downloadFile(url: str, dest: str, part=-1, ext="", headers=None, cookies=None, doThrow=False):
+def downloadFile(url: str, dest="", part=-1, ext="", headers=None, cookies=None, doThrow=False, filename=""):
     page_content = get_page_content(url, headers, cookies, doThrow)
-    filename = os.path.join(dest, _url_to_filename(url, part, ext))
+    if filename:
+        filename += ext
+    else:
+        filename = os.path.join(dest, _url_to_filename(url, part, ext))
     with open(filename, 'wb') as f:
         f.write(page_content)
 
