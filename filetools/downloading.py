@@ -58,6 +58,9 @@ def downloadFiles(mainpage: str, name: str, subSide="", g_xpath='//a', g_contain
             gallery_title = ''
         downloadFile(galleryUrl, dest, cookies=cookies)
         fileUrls = getHrefs(galleryUrl, f_xpath, f_contains)
+        if len(fileUrls) == 0:
+            print("no file urls found")
+            continue
         ofile.write(" ".join([mainname, name, gallery_name, fileUrls[0].split("/")[f_part], gallery]) + "\n")
         for j, fileUrl in enumerate(fileUrls):
             fileUrl = createUrl(fileUrl, mainpage)
