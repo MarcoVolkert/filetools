@@ -129,6 +129,8 @@ def downloadFile(url: str, dest="", part=-1, ext="", headers=None, cookies=None,
 
 
 def download_file_direct(url: str, filename: str, headers=None, cookies=None, do_throw=False):
+    if "?" in url:
+        url = url[:url.rfind("?")]
     page_content = get_page_content(url, headers, cookies, do_throw)
     with open(filename, 'wb') as f:
         f.write(page_content)
