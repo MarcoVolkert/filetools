@@ -21,13 +21,13 @@ __all__ = ["downloadFiles", "downloadFilesFromGallery", "downloadFilesMulti", "f
 
 def getHrefs(page, xpath='//a', contains='', headers=None, cookies=None) -> List[str]:
     tree = html.fromstring(get_page_content(page, headers=headers, cookies=cookies))
-    aList = tree.xpath(xpath)
-    hrefs = [x.get("href") if x.get("href") else x.get("src") for x in aList]
+    elements = tree.xpath(xpath)
+    hrefs = [x.get("href") if x.get("href") else x.get("src") for x in elements]
     hrefs = [href for href in hrefs if href and contains in href]
     return hrefs
 
 
-def downloadFiles(mainpage: str, name: str, subSide="", g_xpath='//a', g_contains='', f_xpath='//a', f_contains="",
+def downloadFiles(mainpage: str, name: str, sub_side="", g_xpath='//a', g_contains='', f_xpath='//a', f_contains="",
                   g_part=None, f_part=-1, ext="", cookies=None, paginator="", take_gallery_title=False):
     maindest = os.getcwd()
     mainname = _strip_url(mainpage)
@@ -35,13 +35,13 @@ def downloadFiles(mainpage: str, name: str, subSide="", g_xpath='//a', g_contain
     os.makedirs(namedest, exist_ok=True)
 
     ofile = open(os.path.join(maindest, "download.txt"), 'a')
-    http_path = _build_http_path(name, subSide)
+    http_path = _build_http_path(name, sub_side)
     galleries = getHrefs(mainpage + http_path, g_xpath, g_contains)
     if paginator:
-        paginationHrefs = getHrefs(mainpage + http_path, paginator)
-        for paginationHref in paginationHrefs:
-            paginationUrl = createUrl(paginationHref, mainpage)
-            galleries += getHrefs(paginationUrl, g_xpath, g_contains)
+        pagination_hrefs = getHrefs(mainpage + http_path, paginator)
+        for paginationHref in pagination_hrefs:
+            pagination_url = createUrl(paginationHref, mainpage)
+            galleries += getHrefs(pagination_url, g_xpath, g_contains)
 
     for i, gallery in enumerate(galleries):
         if g_part:
@@ -51,33 +51,33 @@ def downloadFiles(mainpage: str, name: str, subSide="", g_xpath='//a', g_contain
         dest = os.path.join(namedest, gallery_name)
         print(dest)
         os.makedirs(dest, exist_ok=True)
-        galleryUrl = createUrl(gallery, mainpage)
+        gallery_url = createUrl(gallery, mainpage)
         if take_gallery_title:
-            gallery_title = os.path.join(dest, _url_to_filename(galleryUrl, f_part))
+            gallery_title = os.path.join(dest, _url_to_filename(gallery_url, f_part))
         else:
             gallery_title = ''
-        downloadFile(galleryUrl, dest, cookies=cookies)
-        fileUrls = getHrefs(galleryUrl, f_xpath, f_contains)
-        if len(fileUrls) == 0:
+        downloadFile(gallery_url, dest, cookies=cookies)
+        file_urls = getHrefs(gallery_url, f_xpath, f_contains)
+        if len(file_urls) == 0:
             print("no file urls found")
             continue
-        ofile.write(" ".join([mainname, name, gallery_name, fileUrls[0].split("/")[f_part], gallery]) + "\n")
-        for j, fileUrl in enumerate(fileUrls):
-            fileUrl = createUrl(fileUrl, mainpage)
-            if len(fileUrls) > 1 and gallery_title:
+        ofile.write(" ".join([mainname, name, gallery_name, file_urls[0].split("/")[f_part], gallery]) + "\n")
+        for j, file_url in enumerate(file_urls):
+            file_url = createUrl(file_url, mainpage)
+            if len(file_urls) > 1 and gallery_title:
                 filename = gallery_title + '_%03d' % j
             else:
                 filename = gallery_title
-            downloadFile(fileUrl, dest, f_part, ext, headers={'Referer': galleryUrl}, cookies=cookies,
+            downloadFile(file_url, dest, f_part, ext, headers={'Referer': gallery_url}, cookies=cookies,
                          filename=filename)
     ofile.close()
 
 
-def downloadFilesMulti(mainpage: str, names: List[str], subSide="", g_xpath='//a', g_contains='', f_xpath='//a',
+def downloadFilesMulti(mainpage: str, names: List[str], sub_side="", g_xpath='//a', g_contains='', f_xpath='//a',
                        f_contains="", g_part=None, f_part=-1, ext="", cookies=None, paginator="",
                        take_gallery_title=False):
     for name in names:
-        downloadFiles(mainpage=mainpage, name=name, subSide=subSide, g_xpath=g_xpath, g_contains=g_contains,
+        downloadFiles(mainpage=mainpage, name=name, sub_side=sub_side, g_xpath=g_xpath, g_contains=g_contains,
                       f_xpath=f_xpath, f_contains=f_contains,
                       g_part=g_part, f_part=f_part, ext=ext, cookies=cookies,
                       paginator=paginator, take_gallery_title=take_gallery_title)
@@ -89,12 +89,12 @@ def downloadFilesFromGallery(mainpage: str, subpage: str, xpath='', contains="",
     dest = os.path.join(maindest, mainname)
     os.makedirs(dest, exist_ok=True)
 
-    galleryUrl = mainpage + subpage
-    fileUrls = getHrefs(galleryUrl, xpath, contains)
+    gallery_url = mainpage + subpage
+    file_urls = getHrefs(gallery_url, xpath, contains)
     os.makedirs(dest, exist_ok=True)
-    for fileUrl in fileUrls:
-        fileUrl = createUrl(fileUrl, mainpage)
-        downloadFile(fileUrl, dest, headers={'Referer': galleryUrl}, cookies=cookies)
+    for file_url in file_urls:
+        file_url = createUrl(file_url, mainpage)
+        downloadFile(file_url, dest, headers={'Referer': gallery_url}, cookies=cookies)
 
 
 def firstAndLazyLoaded(mainpage: str, dirname: str, xpath='', contains="", cookies=None):
@@ -102,13 +102,13 @@ def firstAndLazyLoaded(mainpage: str, dirname: str, xpath='', contains="", cooki
     dest = os.path.join(maindest, dirname)
     os.makedirs(dest, exist_ok=True)
 
-    fileUrls = getHrefs(mainpage, xpath, contains)
-    fileUrl = fileUrls[0]
+    file_urls = getHrefs(mainpage, xpath, contains)
+    file_url = file_urls[0]
     for i in range(0, 100):
         contains_sub = contains.replace('0', i.__str__())
-        fileUrl_new = fileUrl.replace(contains, contains_sub)
+        file_url_new = file_url.replace(contains, contains_sub)
         try:
-            downloadFile(fileUrl_new, dest, headers={'Referer': mainpage}, cookies=cookies)
+            downloadFile(file_url_new, dest, headers={'Referer': mainpage}, cookies=cookies)
         except Exception:
             break
 
@@ -119,8 +119,8 @@ def createUrl(url: str, mainpage: str) -> str:
     return url
 
 
-def downloadFile(url: str, dest="", part=-1, ext="", headers=None, cookies=None, doThrow=False, filename=""):
-    page_content = get_page_content(url, headers, cookies, doThrow)
+def downloadFile(url: str, dest="", part=-1, ext="", headers=None, cookies=None, do_throw=False, filename=""):
+    page_content = get_page_content(url, headers, cookies, do_throw)
     if filename:
         filename += ext
     else:
@@ -129,7 +129,7 @@ def downloadFile(url: str, dest="", part=-1, ext="", headers=None, cookies=None,
         f.write(page_content)
 
 
-def get_page_content(url: str, headers=None, cookies=None, doThrow=False) -> Optional[bytes]:
+def get_page_content(url: str, headers=None, cookies=None, do_throw=False) -> Optional[bytes]:
     if headers is None:
         headers = {}
     if cookies is None:
@@ -138,7 +138,7 @@ def get_page_content(url: str, headers=None, cookies=None, doThrow=False) -> Opt
     page = requests.get(url, cookies=cookies, headers=headers)
     if page.status_code != 200:
         print("error in get " + url + " : " + page.status_code + "" + page.reason)
-        if doThrow:
+        if do_throw:
             raise Exception
     return page.content
 
@@ -151,10 +151,10 @@ def _strip_url(url: str) -> str:
     return name
 
 
-def _build_http_path(name: str, subSide="") -> str:
+def _build_http_path(name: str, sub_side="") -> str:
     http_path = '/'
-    if subSide:
-        http_path += subSide + '/'
+    if sub_side:
+        http_path += sub_side + '/'
     http_path += name
     if not name.endswith("html"):
         http_path += "/"
