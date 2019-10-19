@@ -52,10 +52,6 @@ def downloadFiles(mainpage: str, name: str, sub_side="", g_xpath='//a', g_contai
         print(dest)
         os.makedirs(dest, exist_ok=True)
         gallery_url = createUrl(gallery, mainpage)
-        if take_gallery_title:
-            gallery_title = os.path.join(dest, _url_to_filename(gallery_url, f_part))
-        else:
-            gallery_title = ''
         downloadFile(gallery_url, dest, cookies=cookies)
         file_urls = getHrefs(gallery_url, f_xpath, f_contains)
         if len(file_urls) == 0:
@@ -64,12 +60,8 @@ def downloadFiles(mainpage: str, name: str, sub_side="", g_xpath='//a', g_contai
         ofile.write(" ".join([mainname, name, gallery_name, file_urls[0].split("/")[f_part], gallery]) + "\n")
         for j, file_url in enumerate(file_urls):
             file_url = createUrl(file_url, mainpage)
-            if len(file_urls) > 1 and gallery_title:
-                filename = gallery_title + '_%03d' % j
-            else:
-                filename = gallery_title
-            downloadFile(file_url, dest, f_part, ext, headers={'Referer': gallery_url}, cookies=cookies,
-                         filename=filename)
+            filename = build_file_name(dest, file_urls, j, f_part, ext, gallery_url, take_gallery_title)
+            download_file_direct(file_url, filename, headers={'Referer': gallery_url}, cookies=cookies)
     ofile.close()
 
 
@@ -119,12 +111,25 @@ def createUrl(url: str, mainpage: str) -> str:
     return url
 
 
-def downloadFile(url: str, dest="", part=-1, ext="", headers=None, cookies=None, do_throw=False, filename=""):
-    page_content = get_page_content(url, headers, cookies, do_throw)
-    if filename:
-        filename += ext
+def build_file_name(dest, file_urls: List[str], i: int, part=-1, ext="", gallery_url="", take_gallery_title=False):
+    if take_gallery_title:
+        gallery_title = os.path.join(dest, _url_to_filename(gallery_url, part))
+        if len(file_urls) > 1:
+            return gallery_title + '_%03d' % i + ext
+        else:
+            return gallery_title + ext
     else:
+        return os.path.join(dest, _url_to_filename(file_urls[i], part, ext))
+
+
+def downloadFile(url: str, dest="", part=-1, ext="", headers=None, cookies=None, do_throw=False, filename=""):
+    if not filename:
         filename = os.path.join(dest, _url_to_filename(url, part, ext))
+    return download_file_direct(url, filename, headers, cookies, do_throw)
+
+
+def download_file_direct(url: str, filename: str, headers=None, cookies=None, do_throw=False):
+    page_content = get_page_content(url, headers, cookies, do_throw)
     with open(filename, 'wb') as f:
         f.write(page_content)
 
