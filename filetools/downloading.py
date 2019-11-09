@@ -31,16 +31,19 @@ def downloadFiles(mainpage: str, name: str, sub_side="", g_xpath='//a', g_contai
                   g_part=None, f_part=-1, ext="", cookies=None, paginator="", take_gallery_title=False):
     maindest = os.getcwd()
     mainname = _strip_url(mainpage)
-    namedest = os.path.join(maindest, mainname, name.replace('/', '-'))
+    name_dirname = name.replace('/', '-')
+    namedest = os.path.join(maindest, mainname, name_dirname)
     os.makedirs(namedest, exist_ok=True)
 
     ofile = open(os.path.join(maindest, "download.txt"), 'a')
     http_path = _build_http_path(name, sub_side)
+    downloadFile(mainpage + http_path, namedest, filename="%s.html" % name_dirname, cookies=cookies)
     galleries = getHrefs(mainpage + http_path, g_xpath, g_contains)
     if paginator:
         pagination_hrefs = getHrefs(mainpage + http_path, paginator)
-        for paginationHref in pagination_hrefs:
+        for i, paginationHref in enumerate(pagination_hrefs):
             pagination_url = createUrl(paginationHref, mainpage)
+            downloadFile(pagination_url, namedest, filename="%s_p%d.html" % (name_dirname, i + 2), cookies=cookies)
             galleries += getHrefs(pagination_url, g_xpath, g_contains)
 
     for i, gallery in enumerate(galleries):
@@ -52,7 +55,7 @@ def downloadFiles(mainpage: str, name: str, sub_side="", g_xpath='//a', g_contai
         print(dest)
         os.makedirs(dest, exist_ok=True)
         gallery_url = createUrl(gallery, mainpage)
-        downloadFile(gallery_url, dest, cookies=cookies)
+        downloadFile(gallery_url, dest, part=-2, ext='.html', cookies=cookies)
         file_urls = getHrefs(gallery_url, f_xpath, f_contains)
         if len(file_urls) == 0:
             print("no file urls found")
@@ -60,8 +63,8 @@ def downloadFiles(mainpage: str, name: str, sub_side="", g_xpath='//a', g_contai
         ofile.write(" ".join([mainname, name, gallery_name, file_urls[0].split("/")[f_part], gallery]) + "\n")
         for j, file_url in enumerate(file_urls):
             file_url = createUrl(file_url, mainpage)
-            filename = build_file_name(dest, file_urls, j, f_part, ext, gallery_url, take_gallery_title)
-            download_file_direct(file_url, filename, headers={'Referer': gallery_url}, cookies=cookies)
+            filename = build_file_name(file_urls, j, f_part, ext, gallery_url, take_gallery_title)
+            download_file_direct(file_url, dest, filename, headers={'Referer': gallery_url}, cookies=cookies)
     ofile.close()
 
 
@@ -111,28 +114,30 @@ def createUrl(url: str, mainpage: str) -> str:
     return url
 
 
-def build_file_name(dest, file_urls: List[str], i: int, part=-1, ext="", gallery_url="", take_gallery_title=False):
+def build_file_name(file_urls: List[str], i: int, part=-1, ext="", gallery_url="", take_gallery_title=False):
     if take_gallery_title:
-        gallery_title = os.path.join(dest, _url_to_filename(gallery_url, part))
+        gallery_title = _url_to_filename(gallery_url, part)
         if len(file_urls) > 1:
             return gallery_title + '_%03d' % i + ext
         else:
             return gallery_title + ext
     else:
-        return os.path.join(dest, _url_to_filename(file_urls[i], part, ext))
+        return _url_to_filename(file_urls[i], part, ext)
 
 
-def downloadFile(url: str, dest="", part=-1, ext="", headers=None, cookies=None, do_throw=False, filename=""):
+def downloadFile(url: str, dest: str, part=-1, ext="", headers=None, cookies=None, do_throw=False, filename=""):
+    print(filename)
     if not filename:
-        filename = os.path.join(dest, _url_to_filename(url, part, ext))
-    return download_file_direct(url, filename, headers, cookies, do_throw)
+        filename = _url_to_filename(url, part, ext)
+    return download_file_direct(url, dest, filename, headers, cookies, do_throw)
 
 
-def download_file_direct(url: str, filename: str, headers=None, cookies=None, do_throw=False):
+def download_file_direct(url: str, dest: str, filename: str, headers=None, cookies=None, do_throw=False):
+    filepath = os.path.join(dest, filename)
     if "?" in url:
         url = url[:url.rfind("?")]
     page_content = get_page_content(url, headers, cookies, do_throw)
-    with open(filename, 'wb') as f:
+    with open(filepath, 'wb') as f:
         f.write(page_content)
 
 
