@@ -5,6 +5,7 @@ collection of download operations
 http://docs.python-guide.org/en/latest/scenarios/scrape/
 http://stackabuse.com/download-files-with-python/
 """
+from time import sleep
 from typing import List, Optional
 
 __author__ = "Marco Volkert"
@@ -144,10 +145,16 @@ def download_file_direct(url: str, dest: str, filename: str, headers=None, cooki
 def get_page_content(url: str, headers=None, cookies=None, do_throw=False) -> Optional[bytes]:
     if headers is None:
         headers = {}
+    headers['Connection'] = 'keep-alive'
     if cookies is None:
         cookies = {}
     print("get: " + url)
-    page = requests.get(url, cookies=cookies, headers=headers)
+    try:
+        page = requests.get(url, cookies=cookies, headers=headers)
+    except (requests.exceptions.ConnectionError, requests.exceptions.SSLError) as e:
+        print("got exception maybe to many requests - try again", e)
+        sleep(30)
+        page = requests.get(url, cookies=cookies, headers=headers)
     if page.status_code != 200:
         print("error in get " + url + " : " + page.status_code + "" + page.reason)
         if do_throw:
