@@ -211,6 +211,31 @@ def normalizeCountersButKeepName(subpath="", name="", start=1, write=False, digi
     return normalDirCounter
 
 
+def videoNames(subpath="", prefix="", start=1, write=False, digits=3, reverse=True):
+    inpath = concatPath(subpath)
+    outstring = ""
+    if write: renameTemp(inpath)
+    files = []
+    for (dirpath, dirnames, filenames) in os.walk(inpath):
+        for filename in filenames:
+            if '.mp4' not in filename:
+                continue
+            files.append((dirpath, filename))
+    if reverse:
+        files.reverse()
+    counter = start
+    for file in files:
+        counter_str = ("%0" + str(digits) + "d") % counter
+        newname = prefix + counter_str + "_" + file[1].replace('.htm.mp4temp', '.mp4')
+        if write:
+            renameToBase(file[0], file[1], newname)
+        else:
+            outstring += file[1] + "\t" + newname + "\n"
+        counter += 1
+
+    if not write: writeToFile(inpath + "\\newNames.txt", outstring)
+
+
 def foldersToUpper(write=True, subpath=""):
     # from name-surname to Name Surname
     inpath = concatPath(subpath)

@@ -9,6 +9,10 @@ def renameInPlace(dirpath, oldFilename, newFilename):
     os.rename(os.path.join(dirpath, oldFilename), os.path.join(dirpath, newFilename))
 
 
+def renameToBase(dirpath, oldFilename, newFilename):
+    os.rename(os.path.join(dirpath, oldFilename), os.path.join(os.path.dirname(dirpath), newFilename))
+
+
 def renameTemp(inpath):
     if not os.path.isdir(inpath):
         print('not found directory: ' + inpath)
