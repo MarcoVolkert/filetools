@@ -41,11 +41,11 @@ def downloadFiles(mainpage: str, name: str, sub_side="", g_xpath='//a', g_contai
     os.makedirs(namedest, exist_ok=True)
 
     ofile = open(os.path.join(maindest, "download.txt"), 'a')
-    http_path = _build_http_path(name, sub_side)
-    downloadFile(mainpage + http_path, namedest, filename="%s.html" % name_dirname, cookies=cookies)
-    galleries = getHrefs(mainpage + http_path, g_xpath, g_contains, cookies=cookies)
+    http_path = _build_http_path(name, sub_side, mainpage)
+    downloadFile(http_path, namedest, filename="%s.html" % name_dirname, cookies=cookies)
+    galleries = getHrefs(http_path, g_xpath, g_contains, cookies=cookies)
     if paginator:
-        pagination_hrefs = getHrefs(mainpage + http_path, paginator, cookies=cookies)
+        pagination_hrefs = getHrefs(http_path, paginator, cookies=cookies)
         for i, paginationHref in enumerate(pagination_hrefs):
             pagination_url = createUrl(paginationHref, mainpage)
             downloadFile(pagination_url, namedest, filename="%s_p%d.html" % (name_dirname, i + 2), cookies=cookies)
@@ -53,7 +53,7 @@ def downloadFiles(mainpage: str, name: str, sub_side="", g_xpath='//a', g_contai
 
     for i, gallery in enumerate(galleries):
         if g_part:
-            gallery_name = gallery.split("/")[g_part]
+            gallery_name = extract_part(gallery, g_part)
         else:
             gallery_name = '%03d' % i
         dest = os.path.join(namedest, gallery_name)
@@ -67,7 +67,7 @@ def downloadFiles(mainpage: str, name: str, sub_side="", g_xpath='//a', g_contai
         if len(file_urls) == 0:
             print("no file urls found")
             continue
-        ofile.write(" ".join([mainname, name, gallery_name, file_urls[0].split("/")[f_part], gallery]) + "\n")
+        ofile.write(" ".join([mainname, name, gallery_name, extract_part(file_urls[0], f_part), gallery]) + "\n")
         for j, file_url in enumerate(file_urls):
             file_url = createUrl(file_url, mainpage)
             filename = build_file_name(file_urls, j, f_part, ext, gallery_url, take_gallery_title)
@@ -115,9 +115,12 @@ def firstAndLazyLoaded(mainpage: str, dirname: str, xpath='', contains="", cooki
             break
 
 
-def createUrl(url: str, mainpage: str) -> str:
+def createUrl(url: str, mainpage="") -> str:
     if not url.startswith('http'):
-        return mainpage + url
+        if mainpage and mainpage.startswith('http'):
+            return mainpage + url
+        else:
+            print("warning: url does not start with http ", url)
     return url
 
 
@@ -178,24 +181,28 @@ def _strip_url(url: str) -> str:
     return name
 
 
-def _build_http_path(name: str, sub_side="") -> str:
+def _build_http_path(name: str, sub_side="", mainpage="") -> str:
     http_path = '/'
     if sub_side:
         http_path += sub_side + '/'
     http_path += name
     if not name.endswith("html"):
         http_path += "/"
-    return http_path
+    return createUrl(http_path, mainpage)
 
 
 def _url_to_filename(url: str, part=-1, ext="") -> str:
-    url = strip_options(url)
-    filename = url.split('/')[part]
+    filename = extract_part(url, part)
     if ext:
         filename = filename.rsplit(".", 1)[0] + ext
     if not filename:
         filename = "index.html"
     return filename
+
+
+def extract_part(url: str, part: int) -> str:
+    url = strip_options(url)
+    return url.split('/')[part]
 
 
 def strip_options(url: str) -> str:
