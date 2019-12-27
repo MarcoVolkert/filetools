@@ -16,12 +16,16 @@ __status__ = "Development"
 from lxml import html
 import requests
 import os
+import re
 
 __all__ = ["downloadFiles", "downloadFilesFromGallery", "downloadFilesMulti", "firstAndLazyLoaded"]
 
+from requests import Response
+
 
 def getHrefs(page, xpath='//a', contains='', headers=None, cookies=None) -> List[str]:
-    tree = html.fromstring(get_page_content(page, headers=headers, cookies=cookies))
+    response = get_response(page, headers=headers, cookies=cookies)
+    tree = html.fromstring(response.content)
     elements = tree.xpath(xpath)
     hrefs = [x.get("href") if x.get("href") else x.get("src") for x in elements]
     hrefs = [href for href in hrefs if href and contains in href]
@@ -39,13 +43,13 @@ def downloadFiles(mainpage: str, name: str, sub_side="", g_xpath='//a', g_contai
     ofile = open(os.path.join(maindest, "download.txt"), 'a')
     http_path = _build_http_path(name, sub_side)
     downloadFile(mainpage + http_path, namedest, filename="%s.html" % name_dirname, cookies=cookies)
-    galleries = getHrefs(mainpage + http_path, g_xpath, g_contains)
+    galleries = getHrefs(mainpage + http_path, g_xpath, g_contains, cookies=cookies)
     if paginator:
-        pagination_hrefs = getHrefs(mainpage + http_path, paginator)
+        pagination_hrefs = getHrefs(mainpage + http_path, paginator, cookies=cookies)
         for i, paginationHref in enumerate(pagination_hrefs):
             pagination_url = createUrl(paginationHref, mainpage)
             downloadFile(pagination_url, namedest, filename="%s_p%d.html" % (name_dirname, i + 2), cookies=cookies)
-            galleries += getHrefs(pagination_url, g_xpath, g_contains)
+            galleries += getHrefs(pagination_url, g_xpath, g_contains, cookies=cookies)
 
     for i, gallery in enumerate(galleries):
         if g_part:
@@ -57,7 +61,7 @@ def downloadFiles(mainpage: str, name: str, sub_side="", g_xpath='//a', g_contai
         os.makedirs(dest, exist_ok=True)
         gallery_url = createUrl(gallery, mainpage)
         downloadFile(gallery_url, dest, part=-2, ext='.html', cookies=cookies)
-        file_urls = getHrefs(gallery_url, f_xpath, f_contains)
+        file_urls = getHrefs(gallery_url, f_xpath, f_contains, cookies=cookies)
         if len(file_urls) == 0:
             print("no file urls found")
             continue
@@ -86,7 +90,7 @@ def downloadFilesFromGallery(mainpage: str, subpage: str, xpath='', contains="",
     os.makedirs(dest, exist_ok=True)
 
     gallery_url = mainpage + subpage
-    file_urls = getHrefs(gallery_url, xpath, contains)
+    file_urls = getHrefs(gallery_url, xpath, contains, cookies=cookies)
     os.makedirs(dest, exist_ok=True)
     for file_url in file_urls:
         file_url = createUrl(file_url, mainpage)
@@ -98,7 +102,7 @@ def firstAndLazyLoaded(mainpage: str, dirname: str, xpath='', contains="", cooki
     dest = os.path.join(maindest, dirname)
     os.makedirs(dest, exist_ok=True)
 
-    file_urls = getHrefs(mainpage, xpath, contains)
+    file_urls = getHrefs(mainpage, xpath, contains, cookies=cookies)
     file_url = file_urls[0]
     for i in range(0, 100):
         contains_sub = contains.replace('0', i.__str__())
@@ -134,15 +138,17 @@ def downloadFile(url: str, dest: str, part=-1, ext="", headers=None, cookies=Non
 
 
 def download_file_direct(url: str, dest: str, filename: str, headers=None, cookies=None, do_throw=False):
+    url = strip_options(url)
+    response = get_response(url, headers, cookies, do_throw)
+    response_filename = extract_filename_of_response(response)
+    if response_filename:
+        filename = response_filename
     filepath = os.path.join(dest, filename)
-    if "?" in url:
-        url = url[:url.rfind("?")]
-    page_content = get_page_content(url, headers, cookies, do_throw)
     with open(filepath, 'wb') as f:
-        f.write(page_content)
+        f.write(response.content)
 
 
-def get_page_content(url: str, headers=None, cookies=None, do_throw=False) -> Optional[bytes]:
+def get_response(url: str, headers=None, cookies=None, do_throw=False) -> Response:
     if headers is None:
         headers = {}
     headers['Connection'] = 'keep-alive'
@@ -150,16 +156,16 @@ def get_page_content(url: str, headers=None, cookies=None, do_throw=False) -> Op
         cookies = {}
     print("get: " + url)
     try:
-        page = requests.get(url, cookies=cookies, headers=headers)
-    except (requests.exceptions.ConnectionError, requests.exceptions.SSLError) as e:
+        response = requests.get(url, cookies=cookies, headers=headers)
+    except (requests.exceptions.ConnectionError, OSError) as e:
         print("got exception maybe to many requests - try again", e)
         sleep(30)
-        page = requests.get(url, cookies=cookies, headers=headers)
-    if page.status_code != 200:
-        print("error in get " + url + " : " + page.status_code + "" + page.reason)
+        response = requests.get(url, cookies=cookies, headers=headers)
+    if response.status_code != 200:
+        print("error in get " + url + " : " + str(response.status_code) + "" + response.reason)
         if do_throw:
             raise Exception
-    return page.content
+    return response
 
 
 def _strip_url(url: str) -> str:
@@ -181,10 +187,25 @@ def _build_http_path(name: str, sub_side="") -> str:
 
 
 def _url_to_filename(url: str, part=-1, ext="") -> str:
+    url = strip_options(url)
     filename = url.split('/')[part]
-    filename = filename[:filename.rfind("?")]
     if ext:
         filename = filename.rsplit(".", 1)[0] + ext
     if not filename:
         filename = "index.html"
     return filename
+
+
+def strip_options(url: str) -> str:
+    if "?" in url:
+        return url[:url.rfind("?")]
+    return url
+
+
+def extract_filename_of_response(response):
+    filename_key = "Content-Disposition"
+    if filename_key in response.headers:
+        disposition = response.headers[filename_key]
+        filename = re.findall(r"filename\*?=([^;]+)", disposition, flags=re.IGNORECASE)
+        return filename[0].strip().strip('"')
+    return None
