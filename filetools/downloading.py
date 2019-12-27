@@ -58,6 +58,8 @@ def downloadFiles(mainpage: str, name: str, sub_side="", g_xpath='//a', g_contai
             gallery_name = '%03d' % i
         dest = os.path.join(namedest, gallery_name)
         print(dest)
+        if os.path.exists(dest):
+            continue
         os.makedirs(dest, exist_ok=True)
         gallery_url = createUrl(gallery, mainpage)
         downloadFile(gallery_url, dest, part=-2, ext='.html', cookies=cookies)
