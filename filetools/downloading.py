@@ -47,13 +47,13 @@ def downloadFiles(mainpage: str, name: str, sub_side="", g_xpath='//a', g_contai
     if paginator:
         pagination_hrefs = getHrefs(http_path, paginator, cookies=cookies)
         for i, paginationHref in enumerate(pagination_hrefs):
-            pagination_url = createUrl(paginationHref, mainpage)
+            pagination_url = _createUrl(paginationHref, mainpage)
             downloadFile(pagination_url, namedest, filename="%s_p%d.html" % (name_dirname, i + 2), cookies=cookies)
             galleries += getHrefs(pagination_url, g_xpath, g_contains, cookies=cookies)
 
     for i, gallery in enumerate(galleries):
         if g_part:
-            gallery_name = extract_part(gallery, g_part)
+            gallery_name = _extract_part(gallery, g_part)
         else:
             gallery_name = '%03d' % i
         dest = os.path.join(namedest, gallery_name)
@@ -61,16 +61,16 @@ def downloadFiles(mainpage: str, name: str, sub_side="", g_xpath='//a', g_contai
         if os.path.exists(dest):
             continue
         os.makedirs(dest, exist_ok=True)
-        gallery_url = createUrl(gallery, mainpage)
+        gallery_url = _createUrl(gallery, mainpage)
         downloadFile(gallery_url, dest, part=-2, ext='.html', cookies=cookies)
         file_urls = getHrefs(gallery_url, f_xpath, f_contains, cookies=cookies)
         if len(file_urls) == 0:
             print("no file urls found")
             continue
-        ofile.write(" ".join([mainname, name, gallery_name, extract_part(file_urls[0], f_part), gallery]) + "\n")
+        ofile.write(" ".join([mainname, name, gallery_name, _extract_part(file_urls[0], f_part), gallery]) + "\n")
         for j, file_url in enumerate(file_urls):
-            file_url = createUrl(file_url, mainpage)
-            filename = build_file_name(file_urls, j, f_part, ext, gallery_url, take_gallery_title)
+            file_url = _createUrl(file_url, mainpage)
+            filename = _build_file_name(file_urls, j, f_part, ext, gallery_url, take_gallery_title)
             download_file_direct(file_url, dest, filename, headers={'Referer': gallery_url}, cookies=cookies)
     ofile.close()
 
@@ -91,11 +91,11 @@ def downloadFilesFromGallery(mainpage: str, subpage: str, xpath='', contains="",
     dest = os.path.join(maindest, mainname)
     os.makedirs(dest, exist_ok=True)
 
-    gallery_url = mainpage + subpage
+    gallery_url = _createUrl(subpage, mainpage)
     file_urls = getHrefs(gallery_url, xpath, contains, cookies=cookies)
     os.makedirs(dest, exist_ok=True)
     for file_url in file_urls:
-        file_url = createUrl(file_url, mainpage)
+        file_url = _createUrl(file_url, mainpage)
         downloadFile(file_url, dest, headers={'Referer': gallery_url}, cookies=cookies)
 
 
@@ -115,27 +115,7 @@ def firstAndLazyLoaded(mainpage: str, dirname: str, xpath='', contains="", cooki
             break
 
 
-def createUrl(url: str, mainpage="") -> str:
-    if not url.startswith('http'):
-        if mainpage and mainpage.startswith('http'):
-            return mainpage + url
-        else:
-            print("warning: url does not start with http ", url)
-    return url
-
-
-def build_file_name(file_urls: List[str], i: int, part=-1, ext="", gallery_url="", take_gallery_title=False):
-    if take_gallery_title:
-        gallery_title = _url_to_filename(gallery_url, part)
-        if len(file_urls) > 1:
-            return gallery_title + '_%03d' % i + ext
-        else:
-            return gallery_title + ext
-    else:
-        return _url_to_filename(file_urls[i], part, ext)
-
-
-def downloadFile(url: str, dest: str, part=-1, ext="", headers=None, cookies=None, do_throw=False, filename=""):
+def downloadFile(url: str, dest: str, filename="", part=-1, ext="", headers=None, cookies=None, do_throw=False):
     print(filename)
     if not filename:
         filename = _url_to_filename(url, part, ext)
@@ -143,9 +123,9 @@ def downloadFile(url: str, dest: str, part=-1, ext="", headers=None, cookies=Non
 
 
 def download_file_direct(url: str, dest: str, filename: str, headers=None, cookies=None, do_throw=False):
-    url = strip_options(url)
+    url = _strip_options(url)
     response = get_response(url, headers, cookies, do_throw)
-    response_filename = extract_filename_of_response(response)
+    response_filename = _extract_filename_from_response(response)
     if response_filename:
         filename = response_filename
     filepath = os.path.join(dest, filename)
@@ -175,7 +155,7 @@ def get_response(url: str, headers=None, cookies=None, do_throw=False) -> Respon
 
 def _strip_url(url: str) -> str:
     replacements = ['http://', 'https://', 'www.', '.com', '.de']
-    name = url
+    name = _strip_options(url)
     for replacement in replacements:
         name = name.replace(replacement, '')
     return name
@@ -188,11 +168,31 @@ def _build_http_path(name: str, sub_side="", mainpage="") -> str:
     http_path += name
     if not name.endswith("html"):
         http_path += "/"
-    return createUrl(http_path, mainpage)
+    return _createUrl(http_path, mainpage)
+
+
+def _createUrl(url: str, mainpage: str = "") -> str:
+    if not url.startswith('http'):
+        if mainpage and mainpage.startswith('http'):
+            return mainpage + url
+        else:
+            print("warning: url does not start with http ", url)
+    return url
+
+
+def _build_file_name(file_urls: List[str], i: int, part=-1, ext="", gallery_url="", take_gallery_title=False):
+    if take_gallery_title:
+        gallery_title = _url_to_filename(gallery_url, part)
+        if len(file_urls) > 1:
+            return gallery_title + '_%03d' % i + ext
+        else:
+            return gallery_title + ext
+    else:
+        return _url_to_filename(file_urls[i], part, ext)
 
 
 def _url_to_filename(url: str, part=-1, ext="") -> str:
-    filename = extract_part(url, part)
+    filename = _extract_part(url, part)
     if ext:
         filename = filename.rsplit(".", 1)[0] + ext
     if not filename:
@@ -200,18 +200,18 @@ def _url_to_filename(url: str, part=-1, ext="") -> str:
     return filename
 
 
-def extract_part(url: str, part: int) -> str:
-    url = strip_options(url)
+def _extract_part(url: str, part: int) -> str:
+    url = _strip_options(url)
     return url.split('/')[part]
 
 
-def strip_options(url: str) -> str:
+def _strip_options(url: str) -> str:
     if "?" in url:
         return url[:url.rfind("?")]
     return url
 
 
-def extract_filename_of_response(response):
+def _extract_filename_from_response(response: Response):
     filename_key = "Content-Disposition"
     if filename_key in response.headers:
         disposition = response.headers[filename_key]
