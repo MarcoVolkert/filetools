@@ -5,26 +5,25 @@ collection of download operations
 http://docs.python-guide.org/en/latest/scenarios/scrape/
 http://stackabuse.com/download-files-with-python/
 """
-from time import sleep
-from typing import List, Optional
 
 __author__ = "Marco Volkert"
 __copyright__ = "Copyright 2017, Marco Volkert"
 __email__ = "marco.volkert24@gmx.de"
 __status__ = "Development"
 
-from lxml import html
-import requests
 import os
 import re
+from time import sleep
+from typing import List
+from lxml import html
+import requests
+from requests import Response
 
 __all__ = ["downloadFiles", "downloadFilesFromGallery", "downloadFilesMulti", "firstAndLazyLoaded"]
 
-from requests import Response
 
-
-def getHrefs(page, xpath='//a', contains='', headers=None, cookies=None) -> List[str]:
-    response = get_response(page, headers=headers, cookies=cookies)
+def getHrefs(page, xpath='//a', contains='', cookies: dict = None, headers: dict = None) -> List[str]:
+    response = get_response(page, cookies=cookies, headers=headers)
     tree = html.fromstring(response.content)
     elements = tree.xpath(xpath)
     hrefs = [x.get("href") if x.get("href") else x.get("src") for x in elements]
@@ -33,7 +32,7 @@ def getHrefs(page, xpath='//a', contains='', headers=None, cookies=None) -> List
 
 
 def downloadFiles(mainpage: str, name: str, sub_side="", g_xpath='//a', g_contains='', f_xpath='//a', f_contains="",
-                  g_part=None, f_part=-1, ext="", cookies=None, paginator="", take_gallery_title=False):
+                  g_part=None, f_part=-1, ext="", cookies: dict = None, paginator="", take_gallery_title=False):
     maindest = os.getcwd()
     mainname = _strip_url(mainpage)
     name_dirname = name.replace('/', '-')
@@ -71,12 +70,12 @@ def downloadFiles(mainpage: str, name: str, sub_side="", g_xpath='//a', g_contai
         for j, file_url in enumerate(file_urls):
             file_url = _createUrl(file_url, mainpage)
             filename = _build_file_name(file_urls, j, f_part, ext, gallery_url, take_gallery_title)
-            download_file_direct(file_url, dest, filename, headers={'Referer': gallery_url}, cookies=cookies)
+            download_file_direct(file_url, dest, filename, cookies=cookies, headers={'Referer': gallery_url})
     ofile.close()
 
 
 def downloadFilesMulti(mainpage: str, names: List[str], sub_side="", g_xpath='//a', g_contains='', f_xpath='//a',
-                       f_contains="", g_part=None, f_part=-1, ext="", cookies=None, paginator="",
+                       f_contains="", g_part=None, f_part=-1, ext="", cookies: dict = None, paginator="",
                        take_gallery_title=False):
     for name in names:
         downloadFiles(mainpage=mainpage, name=name, sub_side=sub_side, g_xpath=g_xpath, g_contains=g_contains,
@@ -85,7 +84,7 @@ def downloadFilesMulti(mainpage: str, names: List[str], sub_side="", g_xpath='//
                       paginator=paginator, take_gallery_title=take_gallery_title)
 
 
-def downloadFilesFromGallery(mainpage: str, subpage: str, xpath='', contains="", cookies=None):
+def downloadFilesFromGallery(mainpage: str, subpage: str, xpath='', contains="", cookies: dict = None):
     maindest = os.getcwd()
     mainname = _strip_url(mainpage)
     dest = os.path.join(maindest, mainname)
@@ -93,13 +92,12 @@ def downloadFilesFromGallery(mainpage: str, subpage: str, xpath='', contains="",
 
     gallery_url = _createUrl(subpage, mainpage)
     file_urls = getHrefs(gallery_url, xpath, contains, cookies=cookies)
-    os.makedirs(dest, exist_ok=True)
     for file_url in file_urls:
         file_url = _createUrl(file_url, mainpage)
-        downloadFile(file_url, dest, headers={'Referer': gallery_url}, cookies=cookies)
+        downloadFile(file_url, dest, cookies=cookies, headers={'Referer': gallery_url})
 
 
-def firstAndLazyLoaded(mainpage: str, dirname: str, xpath='', contains="", cookies=None):
+def firstAndLazyLoaded(mainpage: str, dirname: str, xpath='', contains="", cookies: dict = None):
     maindest = os.getcwd()
     dest = os.path.join(maindest, dirname)
     os.makedirs(dest, exist_ok=True)
@@ -110,35 +108,38 @@ def firstAndLazyLoaded(mainpage: str, dirname: str, xpath='', contains="", cooki
         contains_sub = contains.replace('0', i.__str__())
         file_url_new = file_url.replace(contains, contains_sub)
         try:
-            downloadFile(file_url_new, dest, headers={'Referer': mainpage}, cookies=cookies)
+            downloadFile(file_url_new, dest, cookies=cookies, headers={'Referer': mainpage})
         except Exception:
             break
 
 
-def downloadFile(url: str, dest: str, filename="", part=-1, ext="", headers=None, cookies=None, do_throw=False):
+def downloadFile(url: str, dest: str, filename="", part=-1, ext="", cookies: dict = None, headers: dict = None,
+                 do_throw=False):
     print(filename)
     if not filename:
         filename = _url_to_filename(url, part, ext)
-    return download_file_direct(url, dest, filename, headers, cookies, do_throw)
+    return download_file_direct(url, dest, filename, cookies, headers, do_throw)
 
 
-def download_file_direct(url: str, dest: str, filename: str, headers=None, cookies=None, do_throw=False):
+def download_file_direct(url: str, dest: str, filename: str, cookies: dict = None, headers: dict = None,
+                         do_throw=False) -> str:
     url = _strip_options(url)
-    response = get_response(url, headers, cookies, do_throw)
+    response = get_response(url, cookies, headers, do_throw)
     response_filename = _extract_filename_from_response(response)
     if response_filename:
         filename = response_filename
     filepath = os.path.join(dest, filename)
     with open(filepath, 'wb') as f:
         f.write(response.content)
+    return filepath
 
 
-def get_response(url: str, headers=None, cookies=None, do_throw=False) -> Response:
+def get_response(url: str, cookies: dict = None, headers: dict = None, do_throw=False) -> Response:
+    if cookies is None:
+        cookies = {}
     if headers is None:
         headers = {}
     headers['Connection'] = 'keep-alive'
-    if cookies is None:
-        cookies = {}
     print("get: " + url)
     try:
         response = requests.get(url, cookies=cookies, headers=headers)
@@ -180,7 +181,7 @@ def _createUrl(url: str, mainpage: str = "") -> str:
     return url
 
 
-def _build_file_name(file_urls: List[str], i: int, part=-1, ext="", gallery_url="", take_gallery_title=False):
+def _build_file_name(file_urls: List[str], i: int, part=-1, ext="", gallery_url="", take_gallery_title=False) -> str:
     if take_gallery_title:
         gallery_title = _url_to_filename(gallery_url, part)
         if len(file_urls) > 1:
@@ -191,7 +192,7 @@ def _build_file_name(file_urls: List[str], i: int, part=-1, ext="", gallery_url=
         return _url_to_filename(file_urls[i], part, ext)
 
 
-def _url_to_filename(url: str, part=-1, ext="") -> str:
+def _url_to_filename(url: str, part: int = -1, ext="") -> str:
     filename = _extract_part(url, part)
     if ext:
         filename = filename.rsplit(".", 1)[0] + ext
