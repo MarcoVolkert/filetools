@@ -34,7 +34,7 @@ def getHrefs(page, xpath='//a', contains='', cookies: dict = None, headers: dict
 
 def downloadFiles(mainpage: str, name: str, sub_side="", g_xpath='//a', g_contains='', f_xpath='//a', f_contains="",
                   g_part=-1, f_part=-1, ext="", cookies: Union[dict, str] = None, paginator="",
-                  take_gallery_title=False):
+                  take_gallery_title=False, start_after=""):
     if isinstance(cookies, str):
         cookies = _cookie_string_2_dict(cookies)
     maindest = os.getcwd()
@@ -55,9 +55,13 @@ def downloadFiles(mainpage: str, name: str, sub_side="", g_xpath='//a', g_contai
             downloadFile(pagination_url, dest_html, filename="%s_p%d.html" % (name_dirname, i + 2), cookies=cookies)
             galleries += getHrefs(pagination_url, g_xpath, g_contains, cookies=cookies)
     galleries.reverse()
+    found = False
 
     for i, gallery in enumerate(galleries):
         gallery_title = _strip_url(_extract_part(gallery, g_part))
+        if start_after and not found:
+            found = start_after == gallery_title
+            continue
         gallery_dirname = '%03d_%s' % (i, gallery_title)
         gallery_url = _createUrl(gallery, mainpage)
         downloadFile(gallery_url, dest_html, filename="%s.html" % gallery_dirname, cookies=cookies)
