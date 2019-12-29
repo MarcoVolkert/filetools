@@ -13,8 +13,9 @@ __status__ = "Development"
 
 import os
 import re
+from http.cookies import SimpleCookie
 from time import sleep
-from typing import List
+from typing import List, Union
 from lxml import html
 import requests
 from requests import Response
@@ -32,7 +33,10 @@ def getHrefs(page, xpath='//a', contains='', cookies: dict = None, headers: dict
 
 
 def downloadFiles(mainpage: str, name: str, sub_side="", g_xpath='//a', g_contains='', f_xpath='//a', f_contains="",
-                  g_part=-1, f_part=-1, ext="", cookies: dict = None, paginator="", take_gallery_title=False):
+                  g_part=-1, f_part=-1, ext="", cookies: Union[dict, str] = None, paginator="",
+                  take_gallery_title=False):
+    if isinstance(cookies, str):
+        cookies = _cookie_string_2_dict(cookies)
     maindest = os.getcwd()
     mainname = _strip_url(mainpage)
     name_dirname = name.replace('/', '-')
@@ -80,7 +84,7 @@ def downloadFiles(mainpage: str, name: str, sub_side="", g_xpath='//a', g_contai
 
 
 def downloadFilesMulti(mainpage: str, names: List[str], sub_side="", g_xpath='//a', g_contains='', f_xpath='//a',
-                       f_contains="", g_part=-1, f_part=-1, ext="", cookies: dict = None, paginator="",
+                       f_contains="", g_part=-1, f_part=-1, ext="", cookies: Union[dict, str] = None, paginator="",
                        take_gallery_title=False):
     for name in names:
         downloadFiles(mainpage=mainpage, name=name, sub_side=sub_side, g_xpath=g_xpath, g_contains=g_contains,
@@ -89,7 +93,9 @@ def downloadFilesMulti(mainpage: str, names: List[str], sub_side="", g_xpath='//
                       paginator=paginator, take_gallery_title=take_gallery_title)
 
 
-def downloadFilesFromGallery(mainpage: str, subpage: str, xpath='', contains="", cookies: dict = None):
+def downloadFilesFromGallery(mainpage: str, subpage: str, xpath='', contains="", cookies: Union[dict, str] = None):
+    if isinstance(cookies, str):
+        cookies = _cookie_string_2_dict(cookies)
     maindest = os.getcwd()
     mainname = _strip_url(mainpage)
     dest = os.path.join(maindest, mainname)
@@ -223,3 +229,15 @@ def _extract_filename_from_response(response: Response):
         filename = re.findall(r"filename\*?=([^;]+)", disposition, flags=re.IGNORECASE)
         return filename[0].strip().strip('"')
     return None
+
+
+def _cookie_string_2_dict(cookie_string: str) -> dict:
+    cookie = SimpleCookie()
+    cookie.load(cookie_string)
+
+    # Even though SimpleCookie is dictionary-like, it internally uses a Morsel object
+    # which is incompatible with requests. Manually construct a dictionary instead.
+    cookies = {}
+    for key, morsel in cookie.items():
+        cookies[key] = morsel.value
+    return cookies
