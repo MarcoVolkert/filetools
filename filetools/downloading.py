@@ -99,7 +99,8 @@ def downloadFilesFromGallery(mainpage: str, subpage: str, xpath='', contains="",
         cookies = _cookie_string_2_dict(cookies)
     maindest = os.getcwd()
     mainname = _strip_url(mainpage)
-    dest = os.path.join(maindest, mainname)
+    subpage_dirname = subpage.replace('/', '-')
+    dest = os.path.join(maindest, mainname, subpage_dirname)
     os.makedirs(dest, exist_ok=True)
 
     gallery_url = _createUrl(subpage, mainpage)
