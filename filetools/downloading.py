@@ -32,7 +32,7 @@ def getHrefs(page, xpath='//a', contains='', cookies: dict = None, headers: dict
 
 
 def downloadFiles(mainpage: str, name: str, sub_side="", g_xpath='//a', g_contains='', f_xpath='//a', f_contains="",
-                  g_part=None, f_part=-1, ext="", cookies: dict = None, paginator="", take_gallery_title=False):
+                  g_part=-1, f_part=-1, ext="", cookies: dict = None, paginator="", take_gallery_title=False):
     maindest = os.getcwd()
     mainname = _strip_url(mainpage)
     name_dirname = name.replace('/', '-')
@@ -51,17 +51,14 @@ def downloadFiles(mainpage: str, name: str, sub_side="", g_xpath='//a', g_contai
             galleries += getHrefs(pagination_url, g_xpath, g_contains, cookies=cookies)
 
     for i, gallery in enumerate(galleries):
-        if g_part:
-            gallery_name = _extract_part(gallery, g_part)
-        else:
-            gallery_name = '%03d' % i
+        gallery_name = '%03d_' % i + _extract_part(gallery, g_part)
         dest = os.path.join(namedest, gallery_name)
         print(dest)
         if os.path.exists(dest):
             continue
         os.makedirs(dest, exist_ok=True)
         gallery_url = _createUrl(gallery, mainpage)
-        downloadFile(gallery_url, dest, part=-2, ext='.html', cookies=cookies)
+        downloadFile(gallery_url, dest, part=g_part, ext='.html', cookies=cookies)
         file_urls = getHrefs(gallery_url, f_xpath, f_contains, cookies=cookies)
         if len(file_urls) == 0:
             print("no file urls found")
@@ -75,7 +72,7 @@ def downloadFiles(mainpage: str, name: str, sub_side="", g_xpath='//a', g_contai
 
 
 def downloadFilesMulti(mainpage: str, names: List[str], sub_side="", g_xpath='//a', g_contains='', f_xpath='//a',
-                       f_contains="", g_part=None, f_part=-1, ext="", cookies: dict = None, paginator="",
+                       f_contains="", g_part=-1, f_part=-1, ext="", cookies: dict = None, paginator="",
                        take_gallery_title=False):
     for name in names:
         downloadFiles(mainpage=mainpage, name=name, sub_side=sub_side, g_xpath=g_xpath, g_contains=g_contains,
