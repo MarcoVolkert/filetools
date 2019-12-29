@@ -9,6 +9,7 @@ __copyright__ = "Copyright 2017, Marco Volkert"
 __email__ = "marco.volkert24@gmx.de"
 __status__ = "Development"
 
+import shutil
 from collections import OrderedDict
 
 from .compare import are_similar
@@ -154,6 +155,17 @@ def deleteNewNamesTxt(subpath=""):
         filename = dirpath + "\\newNames.txt"
         if not os.path.isfile(filename): continue
         os.remove(filename)
+
+
+def delete_empty_dirs(subpath="", ignored_extensions: List[str] = None):
+    inpath = concatPath(subpath)
+    for (dirpath, dirnames, filenames) in os.walk(inpath, topdown=False):
+        if ignored_extensions:
+            filenames = [filename for filename in filenames
+                         if not any(filename.endswith(ignored_extension) for ignored_extension in ignored_extensions)]
+        dirnames = [dirname for dirname in dirnames if os.path.exists(os.path.join(dirpath, dirname))]
+        if not filenames and not dirnames:
+            shutil.rmtree(dirpath)
 
 
 def findSameNames():
