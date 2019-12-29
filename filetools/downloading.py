@@ -54,6 +54,7 @@ def downloadFiles(mainpage: str, name: str, sub_side="", g_xpath='//a', g_contai
             pagination_url = _createUrl(paginationHref, mainpage)
             downloadFile(pagination_url, dest_html, filename="%s_p%d.html" % (name_dirname, i + 2), cookies=cookies)
             galleries += getHrefs(pagination_url, g_xpath, g_contains, cookies=cookies)
+    galleries.reverse()
 
     for i, gallery in enumerate(galleries):
         gallery_title = _strip_url(_extract_part(gallery, g_part))
