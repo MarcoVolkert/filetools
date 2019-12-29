@@ -36,38 +36,46 @@ def downloadFiles(mainpage: str, name: str, sub_side="", g_xpath='//a', g_contai
     maindest = os.getcwd()
     mainname = _strip_url(mainpage)
     name_dirname = name.replace('/', '-')
-    namedest = os.path.join(maindest, mainname, name_dirname)
-    os.makedirs(namedest, exist_ok=True)
+    dest_name = os.path.join(maindest, mainname, name_dirname)
+    dest_html = os.path.join(dest_name, 'html')
+    os.makedirs(dest_html, exist_ok=True)
 
     ofile = open(os.path.join(maindest, "download.txt"), 'a')
     http_path = _build_http_path(name, sub_side, mainpage)
-    downloadFile(http_path, namedest, filename="%s.html" % name_dirname, cookies=cookies)
+    downloadFile(http_path, dest_html, filename="%s.html" % name_dirname, cookies=cookies)
     galleries = getHrefs(http_path, g_xpath, g_contains, cookies=cookies)
     if paginator:
         pagination_hrefs = getHrefs(http_path, paginator, cookies=cookies)
         for i, paginationHref in enumerate(pagination_hrefs):
             pagination_url = _createUrl(paginationHref, mainpage)
-            downloadFile(pagination_url, namedest, filename="%s_p%d.html" % (name_dirname, i + 2), cookies=cookies)
+            downloadFile(pagination_url, dest_html, filename="%s_p%d.html" % (name_dirname, i + 2), cookies=cookies)
             galleries += getHrefs(pagination_url, g_xpath, g_contains, cookies=cookies)
 
     for i, gallery in enumerate(galleries):
-        gallery_name = '%03d_' % i + _extract_part(gallery, g_part)
-        dest = os.path.join(namedest, gallery_name)
-        print(dest)
-        if os.path.exists(dest):
-            continue
-        os.makedirs(dest, exist_ok=True)
+        gallery_title = _strip_url(_extract_part(gallery, g_part))
+        gallery_dirname = '%03d_%s' % (i, gallery_title)
         gallery_url = _createUrl(gallery, mainpage)
-        downloadFile(gallery_url, dest, part=g_part, ext='.html', cookies=cookies)
+        downloadFile(gallery_url, dest_html, filename="%s.html" % gallery_dirname, cookies=cookies)
         file_urls = getHrefs(gallery_url, f_xpath, f_contains, cookies=cookies)
+
         if len(file_urls) == 0:
             print("no file urls found")
             continue
-        ofile.write(" ".join([mainname, name, gallery_name, _extract_part(file_urls[0], f_part), gallery]) + "\n")
+        elif len(file_urls) == 1:
+            dest_gallery = dest_name
+        else:
+            dest_gallery = os.path.join(dest_name, gallery_dirname)
+            if os.path.exists(dest_gallery):
+                continue
+            os.makedirs(dest_gallery)
+        print(dest_gallery)
+
         for j, file_url in enumerate(file_urls):
             file_url = _createUrl(file_url, mainpage)
-            filename = _build_file_name(file_urls, j, f_part, ext, gallery_url, take_gallery_title)
-            download_file_direct(file_url, dest, filename, cookies=cookies, headers={'Referer': gallery_url})
+            filename = _build_file_name(file_urls, j, f_part, ext, gallery_title, take_gallery_title)
+            if j == 0:
+                ofile.write(" ".join([mainname, name, gallery_dirname, filename, gallery]) + "\n")
+            download_file_direct(file_url, dest_gallery, filename, cookies=cookies, headers={'Referer': gallery_url})
     ofile.close()
 
 
@@ -152,7 +160,7 @@ def get_response(url: str, cookies: dict = None, headers: dict = None, do_throw=
 
 
 def _strip_url(url: str) -> str:
-    replacements = ['http://', 'https://', 'www.', '.com', '.de']
+    replacements = ['http://', 'https://', 'www.', '.com', '.de', '.html']
     name = _strip_options(url)
     for replacement in replacements:
         name = name.replace(replacement, '')
@@ -178,9 +186,8 @@ def _createUrl(url: str, mainpage: str = "") -> str:
     return url
 
 
-def _build_file_name(file_urls: List[str], i: int, part=-1, ext="", gallery_url="", take_gallery_title=False) -> str:
+def _build_file_name(file_urls: List[str], i: int, part=-1, ext="", gallery_title="", take_gallery_title=False) -> str:
     if take_gallery_title:
-        gallery_title = _url_to_filename(gallery_url, part)
         if len(file_urls) > 1:
             return gallery_title + '_%03d' % i + ext
         else:
