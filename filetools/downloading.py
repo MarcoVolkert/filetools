@@ -39,28 +39,29 @@ def downloadFiles(mainpage: str, name: str, sub_side="", g_xpath='//a', g_contai
                   take_gallery_title=False, start_after=""):
     if isinstance(cookies, str):
         cookies = _cookie_string_2_dict(cookies)
-    maindest = os.getcwd()
-    mainname = _strip_url(mainpage)
-    name_dirname = name.replace('/', '-')
-    dest_html = makedirs(maindest, mainname, 'html', name_dirname)
 
     http_path = _build_http_path(mainpage, sub_side, name)
-    downloadFile(http_path, dest_html, filename="%s.html" % name_dirname, cookies=cookies)
+    urls = [http_path]
     galleries = getHrefs(http_path, g_xpath, g_contains, cookies=cookies)
     if paginator:
         pagination_hrefs = getHrefs(http_path, paginator, cookies=cookies)
         for i, paginationHref in enumerate(pagination_hrefs):
             pagination_url = _createUrl(paginationHref, mainpage)
-            downloadFile(pagination_url, dest_html, filename="%s_p%d.html" % (name_dirname, i + 2), cookies=cookies)
+            urls.append(pagination_url)
             galleries += getHrefs(pagination_url, g_xpath, g_contains, cookies=cookies)
 
     if not galleries:
         return
 
     galleries.reverse()
-    found = False
+    maindest = os.getcwd()
+    mainname = _strip_url(mainpage)
+    name_dirname = name.replace('/', '-')
     dest_name = makedirs(maindest, mainname, name_dirname)
+    dest_html = makedirs(maindest, mainname, 'html', name_dirname)
+    download_html(urls, dest_html, name_dirname, cookies)
     ofile = open(os.path.join(maindest, "download.txt"), 'a')
+    found = False
 
     for i, gallery in enumerate(galleries):
         gallery_title = _strip_url(_extract_part(gallery, g_part))
@@ -69,7 +70,6 @@ def downloadFiles(mainpage: str, name: str, sub_side="", g_xpath='//a', g_contai
             continue
         gallery_dirname = '%03d_%s' % (i, gallery_title)
         gallery_url = _createUrl(gallery, mainpage)
-        downloadFile(gallery_url, dest_html, filename="%s.html" % gallery_dirname, cookies=cookies)
         file_urls = getHrefs(gallery_url, f_xpath, f_contains, cookies=cookies)
 
         if len(file_urls) == 0:
@@ -83,6 +83,7 @@ def downloadFiles(mainpage: str, name: str, sub_side="", g_xpath='//a', g_contai
                 continue
             os.makedirs(dest_gallery)
         print(dest_gallery)
+        download_html([gallery_url], dest_html, gallery_dirname, cookies)
 
         for j, file_url in enumerate(file_urls):
             file_url = _createUrl(file_url, mainpage)
@@ -176,6 +177,14 @@ def get_response(url: str, cookies: dict = None, headers: dict = None, do_throw=
         if do_throw:
             raise Exception
     return response
+
+
+def download_html(urls: List[str], dest: str, filename: str, cookies: dict = None):
+    if len(urls) == 1:
+        downloadFile(urls[0], dest, filename="%s.html" % filename, cookies=cookies)
+    else:
+        for i, url in enumerate(urls):
+            downloadFile(url, dest, filename="%s_p%d.html" % (filename, i + 1), cookies=cookies)
 
 
 def _strip_url(url: str) -> str:
