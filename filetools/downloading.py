@@ -16,6 +16,8 @@ import re
 from http.cookies import SimpleCookie
 from time import sleep
 from typing import List, Union
+
+from filetools.helpers import makedirs
 from lxml import html
 import requests
 from requests import Response
@@ -40,11 +42,8 @@ def downloadFiles(mainpage: str, name: str, sub_side="", g_xpath='//a', g_contai
     maindest = os.getcwd()
     mainname = _strip_url(mainpage)
     name_dirname = name.replace('/', '-')
-    dest_name = os.path.join(maindest, mainname, name_dirname)
-    dest_html = os.path.join(dest_name, 'html')
-    os.makedirs(dest_html, exist_ok=True)
+    dest_html = makedirs(maindest, mainname, 'html', name_dirname)
 
-    ofile = open(os.path.join(maindest, "download.txt"), 'a')
     http_path = _build_http_path(mainpage, sub_side, name)
     downloadFile(http_path, dest_html, filename="%s.html" % name_dirname, cookies=cookies)
     galleries = getHrefs(http_path, g_xpath, g_contains, cookies=cookies)
@@ -54,8 +53,14 @@ def downloadFiles(mainpage: str, name: str, sub_side="", g_xpath='//a', g_contai
             pagination_url = _createUrl(paginationHref, mainpage)
             downloadFile(pagination_url, dest_html, filename="%s_p%d.html" % (name_dirname, i + 2), cookies=cookies)
             galleries += getHrefs(pagination_url, g_xpath, g_contains, cookies=cookies)
+
+    if not galleries:
+        return
+
     galleries.reverse()
     found = False
+    dest_name = makedirs(maindest, mainname, name_dirname)
+    ofile = open(os.path.join(maindest, "download.txt"), 'a')
 
     for i, gallery in enumerate(galleries):
         gallery_title = _strip_url(_extract_part(gallery, g_part))

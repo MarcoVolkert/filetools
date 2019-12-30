@@ -85,6 +85,12 @@ def isfile(*path) -> bool:
     return os.path.isfile(os.path.join(*path))
 
 
+def makedirs(*path) -> str:
+    dirpath = os.path.join(*path)
+    os.makedirs(dirpath, exist_ok=True)
+    return dirpath
+
+
 class Renamer:
     outstring = ""
 
