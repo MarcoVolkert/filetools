@@ -54,13 +54,13 @@ def downloadFiles(mainpage: str, name: str, sub_side="", g_xpath='//a', g_contai
         return
 
     galleries.reverse()
-    maindest = os.getcwd()
-    mainname = _strip_url(mainpage)
-    name_dirname = name.replace('/', '-')
-    dest_name = makedirs(maindest, mainname, name_dirname)
-    dest_html = makedirs(maindest, mainname, 'html', name_dirname)
-    download_html(urls, dest_html, name_dirname, cookies)
-    ofile = open(os.path.join(maindest, "download.txt"), 'a')
+    dest_main = os.getcwd()
+    dirname_mainpage = _strip_url(mainpage)
+    dirname_name = name.replace('/', '-')
+    dest_name = makedirs(dest_main, dirname_mainpage, dirname_name)
+    dest_html = makedirs(dest_main, dirname_mainpage, 'html', dirname_name)
+    download_html(urls, dest_html, dirname_name, cookies)
+    ofile = open(os.path.join(dest_main, "download.txt"), 'a')
     found = False
 
     for i, gallery in enumerate(galleries):
@@ -68,7 +68,7 @@ def downloadFiles(mainpage: str, name: str, sub_side="", g_xpath='//a', g_contai
         if start_after and not found:
             found = start_after == gallery_title
             continue
-        gallery_dirname = '%03d_%s' % (i, gallery_title)
+        dirname_gallery = '%03d_%s' % (i, gallery_title)
         gallery_url = _createUrl(gallery, mainpage)
         file_urls = getHrefs(gallery_url, f_xpath, f_contains, cookies=cookies)
 
@@ -78,18 +78,18 @@ def downloadFiles(mainpage: str, name: str, sub_side="", g_xpath='//a', g_contai
         elif len(file_urls) == 1:
             dest_gallery = dest_name
         else:
-            dest_gallery = os.path.join(dest_name, gallery_dirname)
+            dest_gallery = os.path.join(dest_name, dirname_gallery)
             if os.path.exists(dest_gallery):
                 continue
             os.makedirs(dest_gallery)
         print(dest_gallery)
-        download_html([gallery_url], dest_html, gallery_dirname, cookies)
+        download_html([gallery_url], dest_html, dirname_gallery, cookies)
 
         for j, file_url in enumerate(file_urls):
             file_url = _createUrl(file_url, mainpage)
             filename = _build_file_name(file_urls, j, f_part, ext, gallery_title, take_gallery_title)
             if j == 0:
-                ofile.write(" ".join([mainname, name, gallery_dirname, filename, gallery]) + "\n")
+                ofile.write(" ".join([dirname_mainpage, dirname_name, dirname_gallery, filename, gallery]) + "\n")
             download_file_direct(file_url, dest_gallery, filename, cookies=cookies, headers={'Referer': gallery_url})
     ofile.close()
 
