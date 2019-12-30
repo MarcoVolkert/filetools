@@ -27,6 +27,8 @@ __all__ = ["downloadFiles", "downloadFilesFromGallery", "downloadFilesMulti", "f
 
 def getHrefs(page, xpath='//a', contains='', cookies: dict = None, headers: dict = None) -> List[str]:
     response = get_response(page, cookies=cookies, headers=headers)
+    if response.status_code != 200:
+        return []
     tree = html.fromstring(response.content)
     elements = tree.xpath(xpath)
     hrefs = [x.get("href") if x.get("href") else x.get("src") for x in elements]
@@ -150,6 +152,8 @@ def download_file_direct(url: str, dest: str, filename: str, cookies: dict = Non
                          do_throw=False) -> str:
     url = _strip_options(url)
     response = get_response(url, cookies, headers, do_throw)
+    if response.status_code != 200:
+        return ""
     response_filename = _extract_filename_from_response(response)
     if response_filename:
         filename = response_filename
