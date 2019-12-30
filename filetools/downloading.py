@@ -68,7 +68,7 @@ def downloadFiles(mainpage: str, name: str, sub_side="", g_xpath='//a', g_contai
         if start_after and not found:
             found = start_after == gallery_title
             continue
-        dirname_gallery = '%03d_%s' % (i, gallery_title)
+        dirname_gallery = '%03d_%s' % (i + 1, gallery_title)
         gallery_url = _createUrl(gallery, mainpage)
         file_urls = getHrefs(gallery_url, f_xpath, f_contains, cookies=cookies)
 
@@ -87,7 +87,7 @@ def downloadFiles(mainpage: str, name: str, sub_side="", g_xpath='//a', g_contai
 
         for j, file_url in enumerate(file_urls):
             file_url = _createUrl(file_url, mainpage)
-            filename = _build_file_name(file_urls, j, f_part, ext, gallery_title, take_gallery_title)
+            filename = _build_file_name(file_urls, j, f_part, ext, dirname_gallery, take_gallery_title)
             if j == 0:
                 ofile.write(" ".join([dirname_mainpage, dirname_name, dirname_gallery, filename, gallery]) + "\n")
             download_file_direct(file_url, dest_gallery, filename, cookies=cookies, headers={'Referer': gallery_url})
