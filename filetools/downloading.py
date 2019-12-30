@@ -45,7 +45,7 @@ def downloadFiles(mainpage: str, name: str, sub_side="", g_xpath='//a', g_contai
     os.makedirs(dest_html, exist_ok=True)
 
     ofile = open(os.path.join(maindest, "download.txt"), 'a')
-    http_path = _build_http_path(name, sub_side, mainpage)
+    http_path = _build_http_path(mainpage, sub_side, name)
     downloadFile(http_path, dest_html, filename="%s.html" % name_dirname, cookies=cookies)
     galleries = getHrefs(http_path, g_xpath, g_contains, cookies=cookies)
     if paginator:
@@ -98,7 +98,8 @@ def downloadFilesMulti(mainpage: str, names: List[str], sub_side="", g_xpath='//
                       paginator=paginator, take_gallery_title=take_gallery_title)
 
 
-def downloadFilesFromGallery(mainpage: str, subpage: str, xpath='', contains="", cookies: Union[dict, str] = None):
+def downloadFilesFromGallery(mainpage: str, subpage: str, xpath='//a', contains="", part=-1, ext="",
+                             cookies: Union[dict, str] = None):
     if isinstance(cookies, str):
         cookies = _cookie_string_2_dict(cookies)
     maindest = os.getcwd()
@@ -107,11 +108,12 @@ def downloadFilesFromGallery(mainpage: str, subpage: str, xpath='', contains="",
     dest = os.path.join(maindest, mainname, subpage_dirname)
     os.makedirs(dest, exist_ok=True)
 
-    gallery_url = _createUrl(subpage, mainpage)
+    gallery_url = _build_http_path(mainpage, subpage)
     file_urls = getHrefs(gallery_url, xpath, contains, cookies=cookies)
+    downloadFile(gallery_url, dest, filename="%s.html" % subpage_dirname, cookies=cookies)
     for file_url in file_urls:
         file_url = _createUrl(file_url, mainpage)
-        downloadFile(file_url, dest, cookies=cookies, headers={'Referer': gallery_url})
+        downloadFile(file_url, dest, part=part, ext=ext, cookies=cookies, headers={'Referer': gallery_url})
 
 
 def firstAndLazyLoaded(mainpage: str, dirname: str, xpath='', contains="", cookies: dict = None):
@@ -179,13 +181,14 @@ def _strip_url(url: str) -> str:
     return name
 
 
-def _build_http_path(name: str, sub_side="", mainpage="") -> str:
-    http_path = '/'
+def _build_http_path(mainpage: str, sub_side: str, name: str = "") -> str:
+    http_path = ''
     if sub_side:
-        http_path += sub_side + '/'
-    http_path += name
-    if not name.endswith("html"):
-        http_path += "/"
+        http_path += '/' + sub_side
+    if name:
+        http_path += '/' + name
+        if not name.endswith("html"):
+            http_path += "/"
     return _createUrl(http_path, mainpage)
 
 
