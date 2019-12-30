@@ -184,7 +184,7 @@ def download_html(urls: List[str], dest: str, filename: str, cookies: dict = Non
         downloadFile(urls[0], dest, filename="%s.html" % filename, cookies=cookies)
     else:
         for i, url in enumerate(urls):
-            downloadFile(url, dest, filename="%s_p%d.html" % (filename, i + 1), cookies=cookies)
+            downloadFile(url, dest, filename="%s_p%02d.html" % (filename, i + 1), cookies=cookies)
 
 
 def _strip_url(url: str) -> str:
