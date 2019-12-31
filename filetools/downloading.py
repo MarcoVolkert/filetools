@@ -42,16 +42,19 @@ def downloadFiles(mainpage: str, name: str, sub_side="", g_xpath='//a', g_contai
     if isinstance(cookies, str):
         cookies = _cookie_string_2_dict(cookies)
 
+    # determine url of overview pages
     http_path = _build_http_path(mainpage, sub_side, name)
     urls = [http_path]
-    galleries = getHrefs(http_path, g_xpath, g_contains, cookies=cookies)
     if paginator:
         pagination_hrefs = getHrefs(http_path, paginator, cookies=cookies)
-        for i, paginationHref in enumerate(pagination_hrefs):
+        for paginationHref in pagination_hrefs:
             pagination_url = _createUrl(paginationHref, mainpage)
             urls.append(pagination_url)
-            galleries += getHrefs(pagination_url, g_xpath, g_contains, cookies=cookies)
 
+    # extract galleries
+    galleries = []
+    for url in urls:
+        galleries += getHrefs(url, g_xpath, g_contains, cookies=cookies)
     if not galleries:
         return
 
