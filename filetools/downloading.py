@@ -16,13 +16,20 @@ import re
 from http.cookies import SimpleCookie
 from time import sleep
 from typing import List, Union
-
+from enum import Enum
 from filetools.helpers import makedirs
 from lxml import html
 import requests
 from requests import Response
 
-__all__ = ["downloadFiles", "downloadFilesFromGallery", "downloadFilesMulti", "firstAndLazyLoaded"]
+__all__ = ["downloadFiles", "downloadFilesFromGallery", "downloadFilesMulti", "firstAndLazyLoaded", "NameSource"]
+
+
+class NameSource(Enum):
+    URL = 0
+    CONTENT = 1
+    NAME = 2
+    GALLERY = 3
 
 
 def getHrefs(page, xpath='//a', contains='', cookies: dict = None, headers: dict = None) -> List[str]:
@@ -38,7 +45,7 @@ def getHrefs(page, xpath='//a', contains='', cookies: dict = None, headers: dict
 
 def downloadFiles(mainpage: str, name: str, sub_side="", g_xpath='//a', g_contains='', f_xpath='//a', f_contains="",
                   g_part=-1, f_part=-1, ext="", cookies: Union[dict, str] = None, paginator="",
-                  take_gallery_title=False, start_after=""):
+                  name_source: NameSource = NameSource.URL, start_after="", pretty_print=False):
     if isinstance(cookies, str):
         cookies = _cookie_string_2_dict(cookies)
 
@@ -62,6 +69,8 @@ def downloadFiles(mainpage: str, name: str, sub_side="", g_xpath='//a', g_contai
     dest_main = os.getcwd()
     dirname_mainpage = _strip_url(mainpage)
     dirname_name = name.replace('/', '-')
+    if pretty_print:
+        dirname_name = pretty_name(dirname_name)
     dest_name = makedirs(dest_main, dirname_mainpage, dirname_name)
     dest_html = makedirs(dest_main, dirname_mainpage, 'html', dirname_name)
     download_html(urls, dest_html, dirname_name, cookies)
@@ -92,7 +101,7 @@ def downloadFiles(mainpage: str, name: str, sub_side="", g_xpath='//a', g_contai
 
         for j, file_url in enumerate(file_urls):
             file_url = _createUrl(file_url, mainpage)
-            filename = _build_file_name(file_urls, j, f_part, ext, dirname_gallery, take_gallery_title)
+            filename = _build_file_name(file_urls, j, f_part, ext, dirname_name, i, gallery_title, name_source)
             if j == 0:
                 ofile.write(" ".join([dirname_mainpage, dirname_name, dirname_gallery, filename, gallery]) + "\n")
             download_file_direct(file_url, dest_gallery, filename, cookies=cookies, headers={'Referer': gallery_url})
@@ -101,12 +110,12 @@ def downloadFiles(mainpage: str, name: str, sub_side="", g_xpath='//a', g_contai
 
 def downloadFilesMulti(mainpage: str, names: List[str], sub_side="", g_xpath='//a', g_contains='', f_xpath='//a',
                        f_contains="", g_part=-1, f_part=-1, ext="", cookies: Union[dict, str] = None, paginator="",
-                       take_gallery_title=False):
+                       name_source: NameSource = NameSource.URL, pretty_print=False):
     for name in names:
         downloadFiles(mainpage=mainpage, name=name, sub_side=sub_side, g_xpath=g_xpath, g_contains=g_contains,
                       f_xpath=f_xpath, f_contains=f_contains,
                       g_part=g_part, f_part=f_part, ext=ext, cookies=cookies,
-                      paginator=paginator, take_gallery_title=take_gallery_title)
+                      paginator=paginator, name_source=name_source, pretty_print=pretty_print)
 
 
 def downloadFilesFromGallery(mainpage: str, subpage: str, xpath='//a', contains="", part=-1, ext="",
@@ -152,14 +161,15 @@ def downloadFile(url: str, dest: str, filename="", part=-1, ext="", cookies: dic
 
 
 def download_file_direct(url: str, dest: str, filename: str, cookies: dict = None, headers: dict = None,
-                         do_throw=False) -> str:
+                         do_throw=False, name_source: NameSource = NameSource.URL) -> str:
     url = _strip_options(url)
     response = get_response(url, cookies, headers, do_throw)
     if response.status_code != 200:
         return ""
-    response_filename = _extract_filename_from_response(response)
-    if response_filename:
-        filename = response_filename
+    if name_source == NameSource.CONTENT:
+        response_filename = _extract_filename_from_response(response)
+        if response_filename:
+            filename = response_filename
     filepath = os.path.join(dest, filename)
     with open(filepath, 'wb') as f:
         f.write(response.content)
@@ -222,14 +232,19 @@ def _createUrl(url: str, mainpage: str = "") -> str:
     return url
 
 
-def _build_file_name(file_urls: List[str], i: int, part=-1, ext="", gallery_title="", take_gallery_title=False) -> str:
-    if take_gallery_title:
-        if len(file_urls) > 1:
-            return gallery_title + '_%03d' % i + ext
-        else:
-            return gallery_title + ext
+def _build_file_name(file_urls: List[str], file_counter: int, part=-1, ext="", name: str = "", gallery_counter: int = 0,
+                     gallery_title: str = "", name_source: NameSource = NameSource.URL) -> str:
+    if name_source == NameSource.URL or name_source == NameSource.CONTENT:
+        return _url_to_filename(file_urls[file_counter], part, ext)
+    filename = ""
+    if name_source == NameSource.GALLERY:
+        filename = '%03d_%s' % (gallery_counter + 1, gallery_title)
+    elif name_source == NameSource.NAME:
+        filename = '%s_%03d' % (name, gallery_counter + 1)
+    if len(file_urls) > 1:
+        return filename + '_%03d' % (file_counter + 1) + ext
     else:
-        return _url_to_filename(file_urls[i], part, ext)
+        return filename + ext
 
 
 def _url_to_filename(url: str, part: int = -1, ext="") -> str:
@@ -271,3 +286,12 @@ def _cookie_string_2_dict(cookie_string: str) -> dict:
     for key, morsel in cookie.items():
         cookies[key] = morsel.value
     return cookies
+
+def pretty_name(name: str)->str:
+    parts = name.split('-')
+    new_name = ''
+    for part in parts:
+        new_name += part[0].upper()
+        new_name += part[1:]
+        new_name += ' '
+    return new_name[:-1]
