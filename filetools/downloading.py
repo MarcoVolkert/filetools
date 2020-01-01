@@ -13,6 +13,7 @@ __status__ = "Development"
 
 import os
 import re
+from datetime import datetime
 from http.cookies import SimpleCookie
 from time import sleep
 from typing import List, Union
@@ -74,7 +75,10 @@ def downloadFiles(mainpage: str, name: str, sub_side="", g_xpath='//a', g_contai
     dest_name = makedirs(dest_main, dirname_mainpage, dirname_name)
     dest_html = makedirs(dest_main, dirname_mainpage, 'html', dirname_name)
     download_html(urls, dest_html, dirname_name, cookies)
-    ofile = open(os.path.join(dest_main, "download.txt"), 'a')
+    with open(os.path.join(dest_main, "download_names.csv"), 'a') as ofile_names:
+        ofile_names.write(";".join(
+            [dirname_mainpage, dirname_name, str(len(galleries)), http_path, str(datetime.now())]) + "\n")
+    ofile_galleries = open(os.path.join(dest_main, "download_galleries.csv"), 'a')
     found = False
 
     for i, gallery in enumerate(galleries):
@@ -103,9 +107,11 @@ def downloadFiles(mainpage: str, name: str, sub_side="", g_xpath='//a', g_contai
             file_url = _createUrl(file_url, mainpage)
             filename = _build_file_name(file_urls, j, f_part, ext, dirname_name, i, gallery_title, name_source)
             if j == 0:
-                ofile.write(" ".join([dirname_mainpage, dirname_name, dirname_gallery, filename, gallery]) + "\n")
+                ofile_galleries.write(";".join(
+                    [dirname_mainpage, dirname_name, dirname_gallery, filename, str(len(file_urls)), gallery,
+                     str(datetime.now())]) + "\n")
             download_file_direct(file_url, dest_gallery, filename, cookies=cookies, headers={'Referer': gallery_url})
-    ofile.close()
+    ofile_galleries.close()
 
 
 def downloadFilesMulti(mainpage: str, names: List[str], sub_side="", g_xpath='//a', g_contains='', f_xpath='//a',
@@ -287,7 +293,8 @@ def _cookie_string_2_dict(cookie_string: str) -> dict:
         cookies[key] = morsel.value
     return cookies
 
-def pretty_name(name: str)->str:
+
+def pretty_name(name: str) -> str:
     parts = name.split('-')
     new_name = ''
     for part in parts:
