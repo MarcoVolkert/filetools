@@ -54,7 +54,7 @@ def getContent(response: Response, xpath: str) -> List[str]:
 
 def downloadFiles(mainpage: str, name: str, sub_side="", g_xpath='//a', g_contains='', f_xpath='//a', f_contains="",
                   g_part=-1, f_part=-1, ext="", cookies: Union[dict, str] = None, paginator="",
-                  name_source: NameSource = NameSource.URL, start_after="", pretty_print=False):
+                  name_source: NameSource = NameSource.URL, start_after="", pretty_print=False, description_xpath=''):
     if isinstance(cookies, str):
         cookies = _cookie_string_2_dict(cookies)
 
@@ -84,7 +84,8 @@ def downloadFiles(mainpage: str, name: str, sub_side="", g_xpath='//a', g_contai
     dest_html = makedirs(dest_main, dirname_mainpage, 'html', dirname_name)
     html_list = download_html(urls, dest_html, dirname_name, cookies)
     html_title = getContent(html_list[0][0], r"//title")[0]
-    _log_name(dest_main, dirname_mainpage, dirname_name, galleries, html_title, http_path)
+    html_description = getContent(html_list[0][0], description_xpath)
+    _log_name(dest_main, dirname_mainpage, dirname_name, galleries, html_title, html_description, http_path)
     found = False
 
     for i, gallery in enumerate(galleries):
@@ -119,12 +120,13 @@ def downloadFiles(mainpage: str, name: str, sub_side="", g_xpath='//a', g_contai
 
 def downloadFilesMulti(mainpage: str, names: List[str], sub_side="", g_xpath='//a', g_contains='', f_xpath='//a',
                        f_contains="", g_part=-1, f_part=-1, ext="", cookies: Union[dict, str] = None, paginator="",
-                       name_source: NameSource = NameSource.URL, pretty_print=False):
+                       name_source: NameSource = NameSource.URL, pretty_print=False, description_xpath=''):
     for name in names:
         downloadFiles(mainpage=mainpage, name=name, sub_side=sub_side, g_xpath=g_xpath, g_contains=g_contains,
                       f_xpath=f_xpath, f_contains=f_contains,
                       g_part=g_part, f_part=f_part, ext=ext, cookies=cookies,
-                      paginator=paginator, name_source=name_source, pretty_print=pretty_print)
+                      paginator=paginator, name_source=name_source, pretty_print=pretty_print,
+                      description_xpath=description_xpath)
 
 
 def downloadFilesFromGallery(mainpage: str, subpage: str, xpath='//a', contains="", part=-1, ext="",
@@ -298,16 +300,17 @@ def _cookie_string_2_dict(cookie_string: str) -> dict:
 
 
 def _log_name(dest_main: str, dirname_mainpage: str, dirname_name: str, galleries: List[str], html_title: str,
-              http_path: str):
+              html_description: List[str], http_path: str):
     ofilename = os.path.join(dest_main, "download1_names.csv")
     ofile_exists = os.path.isfile(ofilename)
     with open(ofilename, 'a') as ofile:
         if not ofile_exists:
             ofile.write(";".join(
                 ["dirname_mainpage", "dirname_name", "number-of-galleries", "download-source-name", "download-title",
-                 "download-date"]) + "\n")
+                 "download-description", "download-date"]) + "\n")
         ofile.write(";".join(
-            [dirname_mainpage, dirname_name, str(len(galleries)), http_path, html_title, str(datetime.now())]) + "\n")
+            [dirname_mainpage, dirname_name, str(len(galleries)), http_path, html_title, ",".join(html_description),
+             str(datetime.now())]) + "\n")
 
 
 def _log_gallery(dest_main: str, dirname_mainpage: str, dirname_name: str, dirname_gallery: str, filename: str,
