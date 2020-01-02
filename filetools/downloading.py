@@ -45,11 +45,11 @@ def getHrefs(page, xpath='//a', contains='', cookies: dict = None, headers: dict
 
 
 def getContent(response: Response, xpath: str) -> List[str]:
-    if response.status_code != 200:
+    if response.status_code != 200 or not xpath:
         return []
     tree = html.fromstring(response.content)
     elements = tree.xpath(xpath)
-    return elements
+    return [element.text_content() for element in elements]
 
 
 def downloadFiles(mainpage: str, name: str, sub_side="", g_xpath='//a', g_contains='', f_xpath='//a', f_contains="",
