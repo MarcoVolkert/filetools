@@ -16,7 +16,7 @@ import re
 from datetime import datetime
 from http.cookies import SimpleCookie
 from time import sleep
-from typing import List, Union
+from typing import List, Union, Tuple
 from enum import Enum
 from filetools.helpers import makedirs
 from lxml import html
@@ -42,6 +42,14 @@ def getHrefs(page, xpath='//a', contains='', cookies: dict = None, headers: dict
     hrefs = [x.get("href") if x.get("href") else x.get("src") for x in elements]
     hrefs = [href for href in hrefs if href and contains in href]
     return hrefs
+
+
+def getContent(response: Response, xpath: str) -> List[str]:
+    if response.status_code != 200:
+        return []
+    tree = html.fromstring(response.content)
+    elements = tree.xpath(xpath)
+    return elements
 
 
 def downloadFiles(mainpage: str, name: str, sub_side="", g_xpath='//a', g_contains='', f_xpath='//a', f_contains="",
@@ -74,11 +82,9 @@ def downloadFiles(mainpage: str, name: str, sub_side="", g_xpath='//a', g_contai
         dirname_name = pretty_name(dirname_name)
     dest_name = makedirs(dest_main, dirname_mainpage, dirname_name)
     dest_html = makedirs(dest_main, dirname_mainpage, 'html', dirname_name)
-    download_html(urls, dest_html, dirname_name, cookies)
-    with open(os.path.join(dest_main, "download_names.csv"), 'a') as ofile_names:
-        ofile_names.write(";".join(
-            [dirname_mainpage, dirname_name, str(len(galleries)), http_path, str(datetime.now())]) + "\n")
-    ofile_galleries = open(os.path.join(dest_main, "download_galleries.csv"), 'a')
+    html_list = download_html(urls, dest_html, dirname_name, cookies)
+    html_title = getContent(html_list[0][0], r"//title")[0]
+    _log_name(dest_main, dirname_mainpage, dirname_name, galleries, html_title, http_path)
     found = False
 
     for i, gallery in enumerate(galleries):
@@ -107,11 +113,8 @@ def downloadFiles(mainpage: str, name: str, sub_side="", g_xpath='//a', g_contai
             file_url = _createUrl(file_url, mainpage)
             filename = _build_file_name(file_urls, j, f_part, ext, dirname_name, i, gallery_title, name_source)
             if j == 0:
-                ofile_galleries.write(";".join(
-                    [dirname_mainpage, dirname_name, dirname_gallery, filename, str(len(file_urls)), gallery,
-                     str(datetime.now())]) + "\n")
+                _log_gallery(dest_main, dirname_mainpage, dirname_name, dirname_gallery, filename, file_urls, gallery)
             download_file_direct(file_url, dest_gallery, filename, cookies=cookies, headers={'Referer': gallery_url})
-    ofile_galleries.close()
 
 
 def downloadFilesMulti(mainpage: str, names: List[str], sub_side="", g_xpath='//a', g_contains='', f_xpath='//a',
@@ -159,7 +162,7 @@ def firstAndLazyLoaded(mainpage: str, dirname: str, xpath='', contains="", cooki
 
 
 def downloadFile(url: str, dest: str, filename="", part=-1, ext="", cookies: dict = None, headers: dict = None,
-                 do_throw=False):
+                 do_throw=False) -> Tuple[Response, str]:
     print(filename)
     if not filename:
         filename = _url_to_filename(url, part, ext)
@@ -167,11 +170,11 @@ def downloadFile(url: str, dest: str, filename="", part=-1, ext="", cookies: dic
 
 
 def download_file_direct(url: str, dest: str, filename: str, cookies: dict = None, headers: dict = None,
-                         do_throw=False, name_source: NameSource = NameSource.URL) -> str:
+                         do_throw=False, name_source: NameSource = NameSource.URL) -> Tuple[Response, str]:
     url = _strip_options(url)
     response = get_response(url, cookies, headers, do_throw)
     if response.status_code != 200:
-        return ""
+        return response, ""
     if name_source == NameSource.CONTENT:
         response_filename = _extract_filename_from_response(response)
         if response_filename:
@@ -179,7 +182,7 @@ def download_file_direct(url: str, dest: str, filename: str, cookies: dict = Non
     filepath = os.path.join(dest, filename)
     with open(filepath, 'wb') as f:
         f.write(response.content)
-    return filepath
+    return response, filepath
 
 
 def get_response(url: str, cookies: dict = None, headers: dict = None, do_throw=False) -> Response:
@@ -202,12 +205,12 @@ def get_response(url: str, cookies: dict = None, headers: dict = None, do_throw=
     return response
 
 
-def download_html(urls: List[str], dest: str, filename: str, cookies: dict = None):
+def download_html(urls: List[str], dest: str, filename: str, cookies: dict = None) -> List[Tuple[Response, str]]:
     if len(urls) == 1:
-        downloadFile(urls[0], dest, filename="%s.html" % filename, cookies=cookies)
+        return [downloadFile(urls[0], dest, filename="%s.html" % filename, cookies=cookies)]
     else:
-        for i, url in enumerate(urls):
-            downloadFile(url, dest, filename="%s_p%02d.html" % (filename, i + 1), cookies=cookies)
+        return [downloadFile(url, dest, filename="%s_p%02d.html" % (filename, i + 1), cookies=cookies)
+                for i, url in enumerate(urls)]
 
 
 def _strip_url(url: str) -> str:
@@ -292,6 +295,33 @@ def _cookie_string_2_dict(cookie_string: str) -> dict:
     for key, morsel in cookie.items():
         cookies[key] = morsel.value
     return cookies
+
+
+def _log_name(dest_main: str, dirname_mainpage: str, dirname_name: str, galleries: List[str], html_title: str,
+              http_path: str):
+    ofilename = os.path.join(dest_main, "download1_names.csv")
+    ofile_exists = os.path.isfile(ofilename)
+    with open(ofilename, 'a') as ofile:
+        if not ofile_exists:
+            ofile.write(";".join(
+                ["dirname_mainpage", "dirname_name", "number-of-galleries", "download-source-name", "download-title",
+                 "download-date"]) + "\n")
+        ofile.write(";".join(
+            [dirname_mainpage, dirname_name, str(len(galleries)), http_path, html_title, str(datetime.now())]) + "\n")
+
+
+def _log_gallery(dest_main: str, dirname_mainpage: str, dirname_name: str, dirname_gallery: str, filename: str,
+                 file_urls: List[str], gallery: str):
+    ofilename = os.path.join(dest_main, "download2_galleries.csv")
+    ofile_exists = os.path.isfile(ofilename)
+    with open(ofilename, 'a') as ofile:
+        if not ofile_exists:
+            ofile.write(";".join(
+                ["dirname_mainpage", "dirname_name", "dirname_gallery", "filename", "number-of-galleries",
+                 "download-source-gallery", "download-date"]) + "\n")
+        ofile.write(";".join(
+            [dirname_mainpage, dirname_name, dirname_gallery, filename, str(len(file_urls)), gallery,
+             str(datetime.now())]) + "\n")
 
 
 def pretty_name(name: str) -> str:
