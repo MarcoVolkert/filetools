@@ -101,7 +101,7 @@ def downloadFiles(mainpage: str, name: str, sub_side="", g_xpath='//a', g_contai
         if len(file_urls) == 0:
             print("no file urls found")
             continue
-        elif len(file_urls) == 1:
+        elif len(file_urls) == 1 or name_source == NameSource.GALLERY:
             dest_gallery = dest_name
         else:
             dest_gallery = os.path.join(dest_name, dirname_gallery)
@@ -117,7 +117,8 @@ def downloadFiles(mainpage: str, name: str, sub_side="", g_xpath='//a', g_contai
             if j == 0:
                 _log_gallery(dest_main, dirname_mainpage, dirname_name, dirname_gallery, filename, file_urls, gallery)
             if not statistic_only:
-                download_file_direct(file_url, dest_gallery, filename, cookies=cookies, headers={'Referer': gallery_url})
+                download_file_direct(file_url, dest_gallery, filename, cookies=cookies,
+                                     headers={'Referer': gallery_url})
 
 
 def downloadFilesMulti(mainpage: str, names: List[str], sub_side="", g_xpath='//a', g_contains='', f_xpath='//a',
