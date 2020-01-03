@@ -54,7 +54,8 @@ def getContent(response: Response, xpath: str) -> List[str]:
 
 def downloadFiles(mainpage: str, name: str, sub_side="", g_xpath='//a', g_contains='', f_xpath='//a', f_contains="",
                   g_part=-1, f_part=-1, ext="", cookies: Union[dict, str] = None, paginator="",
-                  name_source: NameSource = NameSource.URL, start_after="", pretty_print=False, description_xpath=''):
+                  name_source: NameSource = NameSource.URL, start_after="", pretty_print=False, description_xpath='',
+                  statistic_only=False):
     if isinstance(cookies, str):
         cookies = _cookie_string_2_dict(cookies)
 
@@ -115,18 +116,20 @@ def downloadFiles(mainpage: str, name: str, sub_side="", g_xpath='//a', g_contai
             filename = _build_file_name(file_urls, j, f_part, ext, dirname_name, i, gallery_title, name_source)
             if j == 0:
                 _log_gallery(dest_main, dirname_mainpage, dirname_name, dirname_gallery, filename, file_urls, gallery)
-            download_file_direct(file_url, dest_gallery, filename, cookies=cookies, headers={'Referer': gallery_url})
+            if not statistic_only:
+                download_file_direct(file_url, dest_gallery, filename, cookies=cookies, headers={'Referer': gallery_url})
 
 
 def downloadFilesMulti(mainpage: str, names: List[str], sub_side="", g_xpath='//a', g_contains='', f_xpath='//a',
                        f_contains="", g_part=-1, f_part=-1, ext="", cookies: Union[dict, str] = None, paginator="",
-                       name_source: NameSource = NameSource.URL, pretty_print=False, description_xpath=''):
+                       name_source: NameSource = NameSource.URL, pretty_print=False, description_xpath='',
+                       statistic_only=False):
     for name in names:
         downloadFiles(mainpage=mainpage, name=name, sub_side=sub_side, g_xpath=g_xpath, g_contains=g_contains,
                       f_xpath=f_xpath, f_contains=f_contains,
                       g_part=g_part, f_part=f_part, ext=ext, cookies=cookies,
                       paginator=paginator, name_source=name_source, pretty_print=pretty_print,
-                      description_xpath=description_xpath)
+                      description_xpath=description_xpath, statistic_only=statistic_only)
 
 
 def downloadFilesFromGallery(mainpage: str, subpage: str, xpath='//a', contains="", part=-1, ext="",
