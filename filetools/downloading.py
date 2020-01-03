@@ -323,7 +323,7 @@ def _log_gallery(dest_main: str, dirname_mainpage: str, dirname_name: str, dirna
     with open(ofilename, 'a') as ofile:
         if not ofile_exists:
             ofile.write(";".join(
-                ["dirname_mainpage", "dirname_name", "dirname_gallery", "filename", "number-of-galleries",
+                ["dirname_mainpage", "dirname_name", "dirname_gallery", "filename", "number-of-files",
                  "download-source-gallery", "download-date"]) + "\n")
         ofile.write(";".join(
             [dirname_mainpage, dirname_name, dirname_gallery, filename, str(len(file_urls)), gallery,
