@@ -313,7 +313,7 @@ def _log_name(dest_main: str, dirname_mainpage: str, dirname_name: str, gallerie
                 ["dirname_mainpage", "dirname_name", "number-of-galleries", "download-source-name", "download-title",
                  "download-description", "download-date"]) + "\n")
         ofile.write(";".join(
-            [dirname_mainpage, dirname_name, str(len(galleries)), http_path, html_title, ",".join(html_description),
+            [dirname_mainpage, dirname_name, str(len(galleries)), http_path, html_title, ", ".join(html_description),
              str(datetime.now())]) + "\n")
 
 
