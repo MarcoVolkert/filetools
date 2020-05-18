@@ -1,10 +1,10 @@
 # https://www.pyimagesearch.com/2014/09/15/python-compare-two-images/
 
 # import the necessary packages
-from skimage.measure import compare_ssim as ssim
 import numpy as np
 import cv2
 import os
+from skimage.metrics import structural_similarity
 
 __all__ = ["are_similar"]
 
@@ -19,7 +19,7 @@ def are_similar(filenameA: str, filenameB: str, threshold=0.9):
     imageA = read_picture(filenameA, 20)
     imageB = read_picture(filenameB, 20)
     if imageA is None or imageB is None: return False
-    s = ssim(imageA, imageB)
+    s = structural_similarity(imageA, imageB)
     if threshold < s:
         print(filenameA[0], filenameB[0], s)
     return threshold < s
@@ -50,19 +50,21 @@ def compare_images(directory, nameA, nameB):
     imageA = read_picture(directory + "\\" + nameA)
     imageB = read_picture(directory + "\\" + nameB)
     m = mse(imageA, imageB)
-    s = ssim(imageA, imageB)
+    s = structural_similarity(imageA, imageB)
     print("m:", m)
     print("s", s)
 
 
 def read_picture(path: tuple, xscale=500):
-    name = os.path.join(*path)
-    picture = cv2.imread(name)
+    fullname = os.path.join(*path)
+    with open(fullname, 'rb') as img_stream:
+        file_bytes = np.asarray(bytearray(img_stream.read()), dtype=np.uint8)
+        picture = cv2.imdecode(file_bytes, cv2.IMREAD_UNCHANGED)
     if picture is None:
-        print("failed to load", name)
+        print("failed to load", fullname)
         return
     if not picture.data:
-        print("failed to load (data)", name)
+        print("failed to load (data)", fullname)
         return
     picture = cv2.resize(picture, (xscale, xscale))
     # convert the images to grayscale
