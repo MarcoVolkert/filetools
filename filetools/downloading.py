@@ -55,6 +55,7 @@ def getContent(response: Response, xpath: str) -> List[str]:
 def downloadFiles(mainpage: str, name: str, sub_side="", g_xpath='//a', g_contains='', f_xpath='//a', f_contains="",
                   g_part=-1, f_part=-1, ext="", cookies: Union[dict, str] = None, paginator="",
                   name_source: NameSource = NameSource.URL, start_after="", pretty_print=False, description_xpath='',
+                  description_gallery_xpath='', tags_gallery_xpath='',
                   statistic_only=False):
     if isinstance(cookies, str):
         cookies = _cookie_string_2_dict(cookies)
@@ -109,13 +110,16 @@ def downloadFiles(mainpage: str, name: str, sub_side="", g_xpath='//a', g_contai
                 continue
             os.makedirs(dest_gallery)
         print(dest_gallery)
-        download_html([gallery_url], dest_html, dirname_gallery, cookies)
+        html_list_gallery = download_html([gallery_url], dest_html, dirname_gallery, cookies)
 
         for j, file_url in enumerate(file_urls):
             file_url = _createUrl(file_url, mainpage)
             filename = _build_file_name(file_urls, j, f_part, ext, dirname_name, i, gallery_title, name_source)
             if j == 0:
-                _log_gallery(dest_main, dirname_mainpage, dirname_name, dirname_gallery, filename, file_urls, gallery)
+                html_description_gallery = getContent(html_list_gallery[0][0], description_gallery_xpath)
+                html_tags_gallery = getContent(html_list_gallery[0][0], tags_gallery_xpath)
+                _log_gallery(dest_main, dirname_mainpage, dirname_name, dirname_gallery, filename, file_urls, gallery,
+                             html_tags_gallery, html_description_gallery)
             if not statistic_only:
                 download_file_direct(file_url, dest_gallery, filename, cookies=cookies,
                                      headers={'Referer': gallery_url})
@@ -123,14 +127,17 @@ def downloadFiles(mainpage: str, name: str, sub_side="", g_xpath='//a', g_contai
 
 def downloadFilesMulti(mainpage: str, names: List[str], sub_side="", g_xpath='//a', g_contains='', f_xpath='//a',
                        f_contains="", g_part=-1, f_part=-1, ext="", cookies: Union[dict, str] = None, paginator="",
-                       name_source: NameSource = NameSource.URL, pretty_print=False, description_xpath='',
+                       name_source: NameSource = NameSource.URL, pretty_print=False,
+                       description_xpath='', description_gallery_xpath='', tags_gallery_xpath='',
                        statistic_only=False):
     for name in names:
         downloadFiles(mainpage=mainpage, name=name, sub_side=sub_side, g_xpath=g_xpath, g_contains=g_contains,
                       f_xpath=f_xpath, f_contains=f_contains,
                       g_part=g_part, f_part=f_part, ext=ext, cookies=cookies,
                       paginator=paginator, name_source=name_source, pretty_print=pretty_print,
-                      description_xpath=description_xpath, statistic_only=statistic_only)
+                      description_xpath=description_xpath, description_gallery_xpath=description_gallery_xpath,
+                      tags_gallery_xpath=tags_gallery_xpath,
+                      statistic_only=statistic_only)
 
 
 def downloadFilesFromGallery(mainpage: str, subpage: str, xpath='//a', contains="", part=-1, ext="",
@@ -318,17 +325,17 @@ def _log_name(dest_main: str, dirname_mainpage: str, dirname_name: str, gallerie
 
 
 def _log_gallery(dest_main: str, dirname_mainpage: str, dirname_name: str, dirname_gallery: str, filename: str,
-                 file_urls: List[str], gallery: str):
+                 file_urls: List[str], gallery: str, html_tags: List[str], html_description: List[str]):
     ofilename = os.path.join(dest_main, "download2_galleries.csv")
     ofile_exists = os.path.isfile(ofilename)
     with open(ofilename, 'a') as ofile:
         if not ofile_exists:
             ofile.write(";".join(
                 ["dirname_mainpage", "dirname_name", "dirname_gallery", "filename", "number-of-files",
-                 "download-source-gallery", "download-date"]) + "\n")
+                 "download-source-gallery", "download-date", "html_tags", "html_description"]) + "\n")
         ofile.write(";".join(
             [dirname_mainpage, dirname_name, dirname_gallery, filename, str(len(file_urls)), gallery,
-             str(datetime.now())]) + "\n")
+             str(datetime.now()), ", ".join(html_tags), ", ".join(html_description)]) + "\n")
 
 
 def pretty_name(name: str) -> str:
