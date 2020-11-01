@@ -18,7 +18,7 @@ from http.cookies import SimpleCookie
 from time import sleep
 from typing import List, Union, Tuple
 from enum import Enum
-from filetools.helpers import makedirs
+from filetools.helpers import read_file_as_bytes, isfile
 from lxml import html
 import requests
 from requests import Response
@@ -33,21 +33,20 @@ class NameSource(Enum):
     GALLERY = 3
 
 
-def getHrefs(page, xpath='//a', contains='', cookies: dict = None, headers: dict = None) -> List[str]:
-    response = get_response(page, cookies=cookies, headers=headers)
-    if response.status_code != 200:
+def get_hrefs(page: bytes, xpath='//a', contains='') -> List[str]:
+    if not page:
         return []
-    tree = html.fromstring(response.content)
+    tree = html.fromstring(page)
     elements = tree.xpath(xpath)
     hrefs = [x.get("href") if x.get("href") else x.get("src") for x in elements]
     hrefs = [href for href in hrefs if href and contains in href]
     return hrefs
 
 
-def getContent(response: Response, xpath: str) -> List[str]:
-    if response.status_code != 200 or not xpath:
+def get_content(page: bytes, xpath: str) -> List[str]:
+    if not page or not xpath:
         return []
-    tree = html.fromstring(response.content)
+    tree = html.fromstring(page)
     elements = tree.xpath(xpath)
     return [element.text_content() for element in elements]
 
@@ -56,38 +55,35 @@ def downloadFiles(mainpage: str, name: str, sub_side="", g_xpath='//a', g_contai
                   g_part=-1, f_part=-1, ext="", cookies: Union[dict, str] = None, paginator="",
                   name_source: NameSource = NameSource.URL, start_after="", pretty_print=False, description_xpath='',
                   description_gallery_xpath='', tags_gallery_xpath='',
-                  statistic_only=False):
-    if isinstance(cookies, str):
-        cookies = _cookie_string_2_dict(cookies)
+                  statistic_only=False, analyse_local=False):
+    if analyse_local:
+        html_resolver = HtmlFileResolver(mainpage, name, sub_side, pretty_print)
+    else:
+        html_resolver = HtmlHttpResolver(mainpage, name, sub_side, pretty_print, cookies)
 
     # determine url of overview pages
-    http_path = _build_http_path(mainpage, sub_side, name)
-    urls = [http_path]
+    urls = [html_resolver.http_path]
     if paginator:
-        pagination_hrefs = getHrefs(http_path, paginator, cookies=cookies)
+        mainpage_content = html_resolver.get_mainpage()
+        pagination_hrefs = get_hrefs(mainpage_content, paginator)
         for paginationHref in pagination_hrefs:
             pagination_url = _createUrl(paginationHref, mainpage)
             urls.append(pagination_url)
 
+    html_list = html_resolver.get_html_files(urls, html_resolver.dirname_name)
+
     # extract galleries
     galleries = []
-    for url in urls:
-        galleries += getHrefs(url, g_xpath, g_contains, cookies=cookies)
+    for html_page in html_list:
+        galleries += get_hrefs(html_page, g_xpath, g_contains)
     if not galleries:
         return
-
     galleries.reverse()
-    dest_main = os.getcwd()
-    dirname_mainpage = _strip_url(mainpage)
-    dirname_name = name.replace('/', '-')
-    if pretty_print:
-        dirname_name = pretty_name(dirname_name)
-    dest_name = makedirs(dest_main, dirname_mainpage, dirname_name)
-    dest_html = makedirs(dest_main, dirname_mainpage, 'html', dirname_name)
-    html_list = download_html(urls, dest_html, dirname_name, cookies)
-    html_title = getContent(html_list[0][0], r"//title")[0]
-    html_description = getContent(html_list[0][0], description_xpath)
-    _log_name(dest_main, dirname_mainpage, dirname_name, galleries, html_title, html_description, http_path)
+
+    html_title = get_content(html_list[0], r"//title")[0]
+    html_description = get_content(html_list[0], description_xpath)
+    _log_name(html_resolver.dest_main, html_resolver.dirname_mainpage, html_resolver.dirname_name,
+              galleries, html_title, html_description, html_resolver.http_path)
     found = False
 
     for i, gallery in enumerate(galleries):
@@ -97,39 +93,41 @@ def downloadFiles(mainpage: str, name: str, sub_side="", g_xpath='//a', g_contai
             continue
         dirname_gallery = '%03d_%s' % (i + 1, gallery_title)
         gallery_url = _createUrl(gallery, mainpage)
-        file_urls = getHrefs(gallery_url, f_xpath, f_contains, cookies=cookies)
+        html_list_gallery = html_resolver.get_html_files([gallery_url], dirname_gallery)
+        file_urls = get_hrefs(html_list_gallery[0], f_xpath, f_contains)
 
         if len(file_urls) == 0:
-            print("no file urls found")
+            print("no file urls found for ", dirname_gallery)
             continue
         elif len(file_urls) == 1 or name_source == NameSource.GALLERY:
-            dest_gallery = dest_name
+            dest_gallery = html_resolver.dest_name
         else:
-            dest_gallery = os.path.join(dest_name, dirname_gallery)
+            dest_gallery = os.path.join(html_resolver.dest_name, dirname_gallery)
             if os.path.exists(dest_gallery):
                 continue
             os.makedirs(dest_gallery)
         print(dest_gallery)
-        html_list_gallery = download_html([gallery_url], dest_html, dirname_gallery, cookies)
 
         for j, file_url in enumerate(file_urls):
             file_url = _createUrl(file_url, mainpage)
-            filename = _build_file_name(file_urls, j, f_part, ext, dirname_name, i, gallery_title, name_source)
+            filename = _build_file_name(file_urls, j, f_part, ext, html_resolver.dirname_name, i, gallery_title,
+                                        name_source)
             if j == 0:
-                html_description_gallery = getContent(html_list_gallery[0][0], description_gallery_xpath)
-                html_tags_gallery = getContent(html_list_gallery[0][0], tags_gallery_xpath)
-                _log_gallery(dest_main, dirname_mainpage, dirname_name, dirname_gallery, filename, file_urls, gallery,
+                html_description_gallery = get_content(html_list_gallery[0], description_gallery_xpath)
+                html_tags_gallery = get_content(html_list_gallery[0], tags_gallery_xpath)
+                _log_gallery(html_resolver.dest_main, html_resolver.dirname_mainpage, html_resolver.dirname_name,
+                             dirname_gallery, filename, file_urls, gallery,
                              html_tags_gallery, html_description_gallery)
             if not statistic_only:
                 download_file_direct(file_url, dest_gallery, filename, cookies=cookies,
-                                     headers={'Referer': gallery_url})
+                                     headers={'Referer': gallery_url}, name_source=name_source)
 
 
 def downloadFilesMulti(mainpage: str, names: List[str], sub_side="", g_xpath='//a', g_contains='', f_xpath='//a',
                        f_contains="", g_part=-1, f_part=-1, ext="", cookies: Union[dict, str] = None, paginator="",
                        name_source: NameSource = NameSource.URL, pretty_print=False,
                        description_xpath='', description_gallery_xpath='', tags_gallery_xpath='',
-                       statistic_only=False):
+                       statistic_only=False, analyse_local=False):
     for name in names:
         downloadFiles(mainpage=mainpage, name=name, sub_side=sub_side, g_xpath=g_xpath, g_contains=g_contains,
                       f_xpath=f_xpath, f_contains=f_contains,
@@ -137,7 +135,7 @@ def downloadFilesMulti(mainpage: str, names: List[str], sub_side="", g_xpath='//
                       paginator=paginator, name_source=name_source, pretty_print=pretty_print,
                       description_xpath=description_xpath, description_gallery_xpath=description_gallery_xpath,
                       tags_gallery_xpath=tags_gallery_xpath,
-                      statistic_only=statistic_only)
+                      statistic_only=statistic_only, analyse_local=analyse_local)
 
 
 def downloadFilesFromGallery(mainpage: str, subpage: str, xpath='//a', contains="", part=-1, ext="",
@@ -151,8 +149,8 @@ def downloadFilesFromGallery(mainpage: str, subpage: str, xpath='//a', contains=
     os.makedirs(dest, exist_ok=True)
 
     gallery_url = _build_http_path(mainpage, subpage)
-    file_urls = getHrefs(gallery_url, xpath, contains, cookies=cookies)
-    downloadFile(gallery_url, dest, filename="%s.html" % subpage_dirname, cookies=cookies)
+    file_urls = get_hrefs(get_response_content(gallery_url, cookies=cookies), xpath, contains)
+    download_file_direct(gallery_url, dest, filename="%s.html" % subpage_dirname, cookies=cookies)
     for file_url in file_urls:
         file_url = _createUrl(file_url, mainpage)
         downloadFile(file_url, dest, part=part, ext=ext, cookies=cookies, headers={'Referer': gallery_url})
@@ -162,8 +160,7 @@ def firstAndLazyLoaded(mainpage: str, dirname: str, xpath='', contains="", cooki
     maindest = os.getcwd()
     dest = os.path.join(maindest, dirname)
     os.makedirs(dest, exist_ok=True)
-
-    file_urls = getHrefs(mainpage, xpath, contains, cookies=cookies)
+    file_urls = get_hrefs(get_response_content(mainpage, cookies=cookies), xpath, contains)
     file_url = file_urls[0]
     for i in range(0, 100):
         contains_sub = contains.replace('0', i.__str__())
@@ -175,11 +172,11 @@ def firstAndLazyLoaded(mainpage: str, dirname: str, xpath='', contains="", cooki
 
 
 def downloadFile(url: str, dest: str, filename="", part=-1, ext="", cookies: dict = None, headers: dict = None,
-                 do_throw=False) -> Tuple[Response, str]:
+                 do_throw=False, name_source: NameSource = NameSource.URL) -> Tuple[Response, str]:
     print(filename)
     if not filename:
-        filename = _url_to_filename(url, part, ext)
-    return download_file_direct(url, dest, filename, cookies, headers, do_throw)
+        filename = _build_file_name([url], 0, part=part, ext=ext)
+    return download_file_direct(url, dest, filename, cookies, headers, do_throw, name_source)
 
 
 def download_file_direct(url: str, dest: str, filename: str, cookies: dict = None, headers: dict = None,
@@ -196,6 +193,14 @@ def download_file_direct(url: str, dest: str, filename: str, cookies: dict = Non
     with open(filepath, 'wb') as f:
         f.write(response.content)
     return response, filepath
+
+
+def get_response_content(url: str, cookies: dict = None, headers: dict = None, do_throw=False) -> bytes:
+    response = get_response(url, cookies, headers, do_throw)
+    if response.status_code != 200:
+        print('bad response: ', response)
+        return b''
+    return response.content
 
 
 def get_response(url: str, cookies: dict = None, headers: dict = None, do_throw=False) -> Response:
@@ -216,14 +221,6 @@ def get_response(url: str, cookies: dict = None, headers: dict = None, do_throw=
         if do_throw:
             raise Exception
     return response
-
-
-def download_html(urls: List[str], dest: str, filename: str, cookies: dict = None) -> List[Tuple[Response, str]]:
-    if len(urls) == 1:
-        return [downloadFile(urls[0], dest, filename="%s.html" % filename, cookies=cookies)]
-    else:
-        return [downloadFile(url, dest, filename="%s_p%02d.html" % (filename, i + 1), cookies=cookies)
-                for i, url in enumerate(urls)]
 
 
 def _strip_url(url: str) -> str:
@@ -346,3 +343,108 @@ def pretty_name(name: str) -> str:
         new_name += part[1:]
         new_name += ' '
     return new_name[:-1]
+
+
+class HtmlResolver:
+    dest_main: str = None
+    dirname_mainpage: str = None
+    dirname_name: str = None
+    dest_name: str = None
+    dest_html: str = None
+
+    def __init__(self, mainpage: str, name: str, sub_side: str = "", pretty_print=False):
+        self.http_path = _build_http_path(mainpage, sub_side, name)
+        self._set_names(mainpage, name, pretty_print)
+
+    def _set_names(self, mainpage: str, name: str, pretty_print=False):
+        self.dest_main = os.getcwd()
+        self.dirname_mainpage = _strip_url(mainpage)
+        self.dirname_name = name.replace('/', '-')
+        if pretty_print:
+            self.dirname_name = pretty_name(self.dirname_name)
+        self.dest_name = os.path.join(self.dest_main, self.dirname_mainpage, self.dirname_name)
+        self.dest_html = os.path.join(self.dest_main, self.dirname_mainpage, 'html', self.dirname_name)
+
+    def get_mainpage(self) -> bytes:
+        raise Exception('not implemented')
+
+    def set_referer(self, referer: str = None) -> None:
+        return
+
+    def get_html_files(self, urls: List[str], filename: str) -> List[bytes]:
+        if len(urls) == 1:
+            return [self.get_file(urls[0], self.dest_html, filename="%s.html" % filename)]
+        else:
+            return [self.get_file(url, self.dest_html, filename="%s_p%02d.html" % (filename, i + 1))
+                    for i, url in enumerate(urls)]
+
+    def get_file(self, url: str, dest: str, filename: str) -> bytes:
+        raise Exception('not implemented')
+
+
+class HtmlHttpResolver(HtmlResolver):
+    cookies: dict = None
+    headers: dict = None
+
+    def __init__(self, mainpage: str, name: str, sub_side: str = "", pretty_print=False,
+                 cookies: Union[dict, str] = None, headers: dict = None):
+        super().__init__(mainpage, name, sub_side, pretty_print)
+        self._set_cookies(cookies)
+        self._set_headers(headers)
+        os.makedirs(self.dest_name, exist_ok=True)
+        os.makedirs(self.dest_html, exist_ok=True)
+
+    def _set_cookies(self, cookies):
+        if cookies:
+            if isinstance(cookies, str):
+                self.cookies = _cookie_string_2_dict(cookies)
+            else:
+                self.cookies = cookies
+        else:
+            self.cookies = {}
+
+    def _set_headers(self, headers):
+        if headers:
+            self.headers = headers
+        else:
+            self.headers = {}
+
+    def set_referer(self, referer: str = None):
+        if referer:
+            self.headers['Referer'] = referer
+        else:
+            del self.headers['Referer']
+
+    def get_mainpage(self) -> bytes:
+        return get_response_content(self.http_path, cookies=self.cookies, headers=self.headers)
+
+    def get_file(self, url: str, dest: str, filename: str) -> bytes:
+        response, path = download_file_direct(url, dest, filename, cookies=self.cookies, headers=self.headers)
+        if response.status_code != 200:
+            print('bad response: ', response)
+            return b''
+        return response.content
+
+
+class HtmlFileResolver(HtmlResolver):
+
+    def __init__(self, mainpage: str, name: str, sub_side: str = "", pretty_print=False):
+        super().__init__(mainpage, name, sub_side, pretty_print)
+
+    def get_mainpage(self) -> bytes:
+        filepath = os.path.join(self.dest_html, "%s.html" % self.dirname_name)
+        if isfile(filepath):
+            return read_file_as_bytes(filepath)
+        filepath = os.path.join(self.dest_html, "%s_p01.html" % self.dirname_name)
+        if isfile(filepath):
+            return read_file_as_bytes(filepath)
+        else:
+            print('file not found: ', filepath)
+            return b''
+
+    def get_file(self, url: str, dest: str, filename: str) -> bytes:
+        filepath = os.path.join(dest, filename)
+        if not isfile(filepath):
+            print('file not found: ', filepath)
+            return b''
+        return read_file_as_bytes(filepath)

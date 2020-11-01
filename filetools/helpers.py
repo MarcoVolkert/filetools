@@ -85,6 +85,11 @@ def isfile(*path) -> bool:
     return os.path.isfile(os.path.join(*path))
 
 
+def read_file_as_bytes(filepath: str) -> bytes:
+    with open(filepath, "rb") as f:
+        return f.read()
+
+
 def makedirs(*path) -> str:
     dirpath = os.path.join(*path)
     os.makedirs(dirpath, exist_ok=True)
