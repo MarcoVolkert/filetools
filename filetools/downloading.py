@@ -119,7 +119,7 @@ def downloadFiles(mainpage: str, name: str, sub_side="", g_xpath='//a', g_contai
                              dirname_gallery, filename, file_urls, gallery,
                              html_tags_gallery, html_description_gallery)
             if not statistic_only:
-                download_file_direct(file_url, dest_gallery, filename, cookies=cookies,
+                download_file_direct(file_url, dest_gallery, filename, cookies=html_resolver.cookies,
                                      headers={'Referer': gallery_url}, name_source=name_source)
 
 
