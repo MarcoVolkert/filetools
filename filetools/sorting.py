@@ -16,7 +16,8 @@ from .compare import are_similar
 from .helpers import *
 
 __all__ = ["detectSimilar", "detectSimilar2", "detectSimilarSeries", "detectSimilar2SelfMultiple",
-           "detectSimilarSelfMultiple", "detectSimilarSeriesPerFolder", "deleteNewNamesTxt", "findSameNames"]
+           "detectSimilarSelfMultiple", "detectSimilarSeriesPerFolder", "deleteNewNamesTxt", "findSameNames",
+           "findSimilarNames"]
 
 
 def detectSimilar(pathA: str, pathB=""):
@@ -176,11 +177,40 @@ def findSameNames():
             fileDict.setdefault(filename, [])
             fileDict[filename].append(dirpath)
 
+    outstring = _dict_to_string(fileDict)
+    writeToFile(inpath + "\\sameNames.txt", outstring)
+
+
+def findSimilarNames(ignore: str = r'^\d+', exclude_dir: str = "html", exclude_file_ext: str = ""):
+    inpath = concatPath("")
+    fileDict = OrderedDict()
+    dirDict = OrderedDict()
+    for (dirpath, dirnames, filenames) in os.walk(inpath):
+        for filename in filenames:
+            if exclude_file_ext and file_has_ext(filename, [exclude_file_ext]):
+                continue
+            filename_striped = filename.replace(ignore, '')
+            fileDict.setdefault(filename_striped, [])
+            fileDict[filename_striped].append(dirpath)
+        for dirname in dirnames:
+            if exclude_dir in dirpath:
+                continue
+            dirname_striped = dirname.replace(ignore, '')
+            dirDict.setdefault(dirname_striped, [])
+            dirDict[dirname_striped].append(dirpath)
+
+    outstring_files = _dict_to_string(fileDict)
+    outstring_dirs = _dict_to_string(dirDict)
+    writeToFile(inpath + "\\sameNames.txt", outstring_files)
+    writeToFile(inpath + "\\sameNames_dirs.txt", outstring_dirs)
+
+
+def _dict_to_string(file_dict: OrderedDict):
     outstring = ""
-    for filename in fileDict:
-        if len(fileDict[filename]) == 1: continue
+    for filename in file_dict:
+        if len(file_dict[filename]) == 1: continue
         outstring += filename
-        for dirpath in fileDict[filename]:
+        for dirpath in file_dict[filename]:
             outstring += "\t" + dirpath
         outstring += "\n"
-    writeToFile(inpath + "\\sameNames.txt", outstring)
+    return outstring

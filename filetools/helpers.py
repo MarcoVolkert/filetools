@@ -1,6 +1,6 @@
 import os
 import re
-from typing import List
+from typing import List, Iterable
 
 from natsort import natsorted
 
@@ -83,6 +83,16 @@ def getFileNamesOfMainDir2(path, subpath=True) -> List[str]:
 
 def isfile(*path) -> bool:
     return os.path.isfile(os.path.join(*path))
+
+
+def file_has_ext(filename: str, file_extensions: Iterable, ignore_case=True) -> bool:
+    for fileext in file_extensions:
+        if ignore_case:
+            fileext = fileext.lower()
+            filename = filename.lower()
+        if fileext == filename[filename.rfind("."):]:
+            return True
+    return False
 
 
 def read_file_as_bytes(filepath: str) -> bytes:
