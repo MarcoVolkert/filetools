@@ -18,7 +18,7 @@ from http.cookies import SimpleCookie
 from time import sleep
 from typing import List, Union, Tuple
 from enum import Enum
-from filetools.helpers import read_file_as_bytes, isfile
+from filetools.helpers import read_file_as_bytes, isfile, modification_date
 from lxml import html
 import requests
 from requests import Response
@@ -31,6 +31,44 @@ class NameSource(Enum):
     CONTENT = 1
     NAME = 2
     GALLERY = 3
+
+
+class HtmlResolver:
+    dest_main: str = None
+    dirname_mainpage: str = None
+    dirname_name: str = None
+    dest_name: str = None
+    dest_html: str = None
+    last_date: datetime = datetime.now()
+
+    def __init__(self, mainpage: str, name: str, sub_side: str = "", pretty_print=False):
+        self.http_path = _build_http_path(mainpage, sub_side, name)
+        self._set_names(mainpage, name, pretty_print)
+
+    def _set_names(self, mainpage: str, name: str, pretty_print=False):
+        self.dest_main = os.getcwd()
+        self.dirname_mainpage = _strip_url(mainpage)
+        self.dirname_name = name.replace('/', '-')
+        if pretty_print:
+            self.dirname_name = pretty_name(self.dirname_name)
+        self.dest_name = os.path.join(self.dest_main, self.dirname_mainpage, self.dirname_name)
+        self.dest_html = os.path.join(self.dest_main, self.dirname_mainpage, 'html', self.dirname_name)
+
+    def get_mainpage(self) -> bytes:
+        raise Exception('not implemented')
+
+    def set_referer(self, referer: str = None) -> None:
+        return
+
+    def get_html_files(self, urls: List[str], filename: str) -> List[bytes]:
+        if len(urls) == 1:
+            return [self.get_file(urls[0], self.dest_html, filename="%s.html" % filename)]
+        else:
+            return [self.get_file(url, self.dest_html, filename="%s_p%02d.html" % (filename, i + 1))
+                    for i, url in enumerate(urls)]
+
+    def get_file(self, url: str, dest: str, filename: str) -> bytes:
+        raise Exception('not implemented')
 
 
 def get_hrefs(page: bytes, xpath='//a', contains='') -> List[str]:
@@ -82,8 +120,7 @@ def downloadFiles(mainpage: str, name: str, sub_side="", g_xpath='//a', g_contai
 
     html_title = get_content(html_list[0], r"//title")[0]
     html_description = get_content(html_list[0], description_xpath)
-    _log_name(html_resolver.dest_main, html_resolver.dirname_mainpage, html_resolver.dirname_name,
-              galleries, html_title, html_description, html_resolver.http_path)
+    _log_name(html_resolver, galleries, html_title, html_description)
     found = False
 
     for i, gallery in enumerate(galleries):
@@ -105,7 +142,8 @@ def downloadFiles(mainpage: str, name: str, sub_side="", g_xpath='//a', g_contai
             dest_gallery = os.path.join(html_resolver.dest_name, dirname_gallery)
             if os.path.exists(dest_gallery):
                 continue
-            os.makedirs(dest_gallery)
+            if not statistic_only:
+                os.makedirs(dest_gallery)
         print(dest_gallery)
 
         for j, file_url in enumerate(file_urls):
@@ -115,8 +153,7 @@ def downloadFiles(mainpage: str, name: str, sub_side="", g_xpath='//a', g_contai
             if j == 0:
                 html_description_gallery = get_content(html_list_gallery[0], description_gallery_xpath)
                 html_tags_gallery = get_content(html_list_gallery[0], tags_gallery_xpath)
-                _log_gallery(html_resolver.dest_main, html_resolver.dirname_mainpage, html_resolver.dirname_name,
-                             dirname_gallery, filename, file_urls, gallery,
+                _log_gallery(html_resolver, dirname_gallery, filename, file_urls, gallery,
                              html_tags_gallery, html_description_gallery)
             if not statistic_only:
                 download_file_direct(file_url, dest_gallery, filename, cookies=html_resolver.cookies,
@@ -307,9 +344,10 @@ def _cookie_string_2_dict(cookie_string: str) -> dict:
     return cookies
 
 
-def _log_name(dest_main: str, dirname_mainpage: str, dirname_name: str, galleries: List[str], html_title: str,
-              html_description: List[str], http_path: str):
-    ofilename = os.path.join(dest_main, "download1_names.csv")
+def _log_name(html_resolver: HtmlResolver, galleries: List[str],
+              html_title: str,
+              html_description: List[str]):
+    ofilename = os.path.join(html_resolver.dest_main, "download1_names.csv")
     ofile_exists = os.path.isfile(ofilename)
     with open(ofilename, 'a') as ofile:
         if not ofile_exists:
@@ -317,13 +355,14 @@ def _log_name(dest_main: str, dirname_mainpage: str, dirname_name: str, gallerie
                 ["dirname_mainpage", "dirname_name", "number-of-galleries", "download-source-name", "download-title",
                  "download-description", "download-date"]) + "\n")
         ofile.write(";".join(
-            [dirname_mainpage, dirname_name, str(len(galleries)), http_path, html_title, ", ".join(html_description),
-             str(datetime.now())]) + "\n")
+            [html_resolver.dirname_mainpage, html_resolver.dirname_name, str(len(galleries)), html_resolver.http_path,
+             html_title, ", ".join(html_description),
+             str(html_resolver.last_date)]) + "\n")
 
 
-def _log_gallery(dest_main: str, dirname_mainpage: str, dirname_name: str, dirname_gallery: str, filename: str,
+def _log_gallery(html_resolver: HtmlResolver, dirname_gallery: str, filename: str,
                  file_urls: List[str], gallery: str, html_tags: List[str], html_description: List[str]):
-    ofilename = os.path.join(dest_main, "download2_galleries.csv")
+    ofilename = os.path.join(html_resolver.dest_main, "download2_galleries.csv")
     ofile_exists = os.path.isfile(ofilename)
     with open(ofilename, 'a') as ofile:
         if not ofile_exists:
@@ -331,8 +370,8 @@ def _log_gallery(dest_main: str, dirname_mainpage: str, dirname_name: str, dirna
                 ["dirname_mainpage", "dirname_name", "dirname_gallery", "filename", "number-of-files",
                  "download-source-gallery", "download-date", "html_tags", "html_description"]) + "\n")
         ofile.write(";".join(
-            [dirname_mainpage, dirname_name, dirname_gallery, filename, str(len(file_urls)), gallery,
-             str(datetime.now()), ", ".join(html_tags), ", ".join(html_description)]) + "\n")
+            [html_resolver.dirname_mainpage, html_resolver.dirname_name, dirname_gallery, filename, str(len(file_urls)), gallery,
+             str(html_resolver.last_date), ", ".join(html_tags), ", ".join(html_description)]) + "\n")
 
 
 def pretty_name(name: str) -> str:
@@ -343,43 +382,6 @@ def pretty_name(name: str) -> str:
         new_name += part[1:]
         new_name += ' '
     return new_name[:-1]
-
-
-class HtmlResolver:
-    dest_main: str = None
-    dirname_mainpage: str = None
-    dirname_name: str = None
-    dest_name: str = None
-    dest_html: str = None
-
-    def __init__(self, mainpage: str, name: str, sub_side: str = "", pretty_print=False):
-        self.http_path = _build_http_path(mainpage, sub_side, name)
-        self._set_names(mainpage, name, pretty_print)
-
-    def _set_names(self, mainpage: str, name: str, pretty_print=False):
-        self.dest_main = os.getcwd()
-        self.dirname_mainpage = _strip_url(mainpage)
-        self.dirname_name = name.replace('/', '-')
-        if pretty_print:
-            self.dirname_name = pretty_name(self.dirname_name)
-        self.dest_name = os.path.join(self.dest_main, self.dirname_mainpage, self.dirname_name)
-        self.dest_html = os.path.join(self.dest_main, self.dirname_mainpage, 'html', self.dirname_name)
-
-    def get_mainpage(self) -> bytes:
-        raise Exception('not implemented')
-
-    def set_referer(self, referer: str = None) -> None:
-        return
-
-    def get_html_files(self, urls: List[str], filename: str) -> List[bytes]:
-        if len(urls) == 1:
-            return [self.get_file(urls[0], self.dest_html, filename="%s.html" % filename)]
-        else:
-            return [self.get_file(url, self.dest_html, filename="%s_p%02d.html" % (filename, i + 1))
-                    for i, url in enumerate(urls)]
-
-    def get_file(self, url: str, dest: str, filename: str) -> bytes:
-        raise Exception('not implemented')
 
 
 class HtmlHttpResolver(HtmlResolver):
@@ -416,9 +418,11 @@ class HtmlHttpResolver(HtmlResolver):
             del self.headers['Referer']
 
     def get_mainpage(self) -> bytes:
+        self.last_date = datetime.now()
         return get_response_content(self.http_path, cookies=self.cookies, headers=self.headers)
 
     def get_file(self, url: str, dest: str, filename: str) -> bytes:
+        self.last_date = datetime.now()
         response, path = download_file_direct(url, dest, filename, cookies=self.cookies, headers=self.headers)
         if response.status_code != 200:
             print('bad response: ', response)
@@ -434,9 +438,11 @@ class HtmlFileResolver(HtmlResolver):
     def get_mainpage(self) -> bytes:
         filepath = os.path.join(self.dest_html, "%s.html" % self.dirname_name)
         if isfile(filepath):
+            self.last_date = modification_date(filepath)
             return read_file_as_bytes(filepath)
         filepath = os.path.join(self.dest_html, "%s_p01.html" % self.dirname_name)
         if isfile(filepath):
+            self.last_date = modification_date(filepath)
             return read_file_as_bytes(filepath)
         else:
             print('file not found: ', filepath)
@@ -447,4 +453,5 @@ class HtmlFileResolver(HtmlResolver):
         if not isfile(filepath):
             print('file not found: ', filepath)
             return b''
+        self.last_date = modification_date(filepath)
         return read_file_as_bytes(filepath)

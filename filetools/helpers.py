@@ -1,3 +1,4 @@
+import datetime
 import os
 import re
 from typing import List, Iterable
@@ -98,6 +99,11 @@ def file_has_ext(filename: str, file_extensions: Iterable, ignore_case=True) -> 
 def read_file_as_bytes(filepath: str) -> bytes:
     with open(filepath, "rb") as f:
         return f.read()
+
+
+def modification_date(filename: str) -> datetime:
+    t = os.path.getmtime(filename)
+    return datetime.datetime.fromtimestamp(t)
 
 
 def makedirs(*path) -> str:
