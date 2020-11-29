@@ -7,3 +7,4 @@ natsort
 send2trash
 lxml
 requests
+pydub
