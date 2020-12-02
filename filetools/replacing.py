@@ -47,13 +47,12 @@ def replace_playlists(output: str, source_key="PC", encoding='latin', convert=Tr
                             for row in mapping_rows:
                                 if row[source_key] in line:
                                     if output == "IPod":
-                                        if ".m4a" in line:
+                                        if file_has_ext(name_org, ".m4a"):
                                             line = line.replace(row[source_key], row[output]).replace(".m4a", ".mp3")
-                                            line_stripped = line.strip()
-                                            if convert and not os.path.isfile(line_stripped.encode(encoding)):
-                                                print("convert to mp3: ", line_stripped.encode(encoding))
+                                            if convert and not os.path.isfile(name_org.encode(encoding)):
+                                                print("convert to mp3: ", name_org.encode(encoding))
                                                 org_version = AudioSegment.from_file(name_org, "m4a")
-                                                org_version.export(line_stripped, format="mp3", bitrate="320k",
+                                                org_version.export(name_org, format="mp3", bitrate="320k",
                                                                    tags=mediainfo(name_org)['TAG'])
                                     else:
                                         line = line.replace(row[source_key], row[output])
@@ -61,12 +60,10 @@ def replace_playlists(output: str, source_key="PC", encoding='latin', convert=Tr
                             print('warning - does not exist: ', filename, name_org.encode(encoding))
                     outlines.append(line)
                     all_lines.append(line)
-            with open(os.path.join(out_dir, filename), "w") as file:
-                file.writelines(outlines)
+            _create_file(out_dir, filename, outlines)
             _create_wpl_file(os.path.join(out_dir, filename), outlines)
 
-    with open(os.path.join(output, "combined.m3u8"), "w") as file:
-        file.writelines(all_lines)
+    _create_file(output, "combined.m3u8", all_lines)
 
 
 def _read_mapping(csv_filename: str) -> List[Union[Dict[str, str], OrderedDict[str, str]]]:
@@ -76,10 +73,15 @@ def _read_mapping(csv_filename: str) -> List[Union[Dict[str, str], OrderedDict[s
         return [row for row in reader]
 
 
+def _create_file(out_dir, filename, outlines):
+    with open(os.path.join(out_dir, filename), "w", encoding="utf-8") as file:
+        file.writelines(outlines)
+
+
 def _create_wpl_file(out_filename: str, outlines: List[str]):
     out_filename = out_filename[:out_filename.rfind('.')]
     title = out_filename[out_filename.rfind(os.path.sep) + 1:]
-    with open(out_filename + ".wpl", "w") as file:
+    with open(out_filename + ".wpl", "w", encoding="utf-8") as file:
         file.write('<?wpl version="1.0"?>\n')
         file.write('<smil><head><author/>\n')
         file.write('<title>' + title + '</title>\n')
@@ -101,6 +103,5 @@ def folders_to_playlist():
         if not outlines:
             continue
         playlist_name = os.path.join(out_dir, basename + ".m3u8")
-        with open(playlist_name, "w") as file:
-            file.writelines(outlines)
+        _create_file(out_dir, basename + ".m3u8", outlines)
         _create_wpl_file(playlist_name, outlines)
