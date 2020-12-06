@@ -35,14 +35,12 @@ def replace(reverse=False):
                         file.writelines(outlines)
 
 
-def replace_playlists(output: str, source_key="PC", convert=True, copy=False,
-                      convertible_ext=(".m4a", ".flac")):
+def replace_playlists(output: str, convert=True, copy=False, source_key="PC",
+                      convertible_ext=(".m4a", ".flac", ".wav")):
     """
     prepare playlist for different destination
     :param output:
         column for output destination
-    :param source_key:
-        valid path on PC where this is executed
     :param convert:
         optional feature to convert to mp3 if output is old IPod
         see: https://github.com/jiaaro/pydub
@@ -50,6 +48,8 @@ def replace_playlists(output: str, source_key="PC", convert=True, copy=False,
         put into path in start script: os.environ["PATH"] += os.pathsep + r"C:\Program Files\ffmpeg\bin"
     :param copy:
         copy to new path
+    :param source_key:
+        valid path on PC where this is executed
     :param convertible_ext:
         extension that should be converted to mp3
     :return:
