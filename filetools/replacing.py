@@ -7,9 +7,32 @@ from typing import List, Union, OrderedDict, Dict
 from pydub import AudioSegment
 from pydub.utils import mediainfo
 
-__all__ = ["replace_playlists", "folders_to_playlist"]
+__all__ = ["replace", "replace_playlists", "folders_to_playlist"]
 
 from filetools.helpers import file_has_ext
+
+
+def replace(reverse=False):
+    csv_filename = "mapping.csv"
+    csv.register_dialect('semicolon', delimiter=';', lineterminator='\r\n')
+    with open(csv_filename, "r", encoding="utf-8") as csv_file:
+        reader = csv.reader(csv_file, dialect='semicolon')
+        for row in reader:
+            old, new = row[:2]
+            if reverse:
+                new, old = old, new
+            for (dirpath, dirnames, filenames) in os.walk(os.getcwd()):
+                for filename in filenames:
+                    if filename == csv_filename:
+                        continue
+                    outlines = []
+                    with open(filename, "r", encoding="utf-8") as file:
+                        for line in file:
+                            if not line.startswith('#'):
+                                line = line.replace(old, new)
+                            outlines.append(line)
+                    with open(filename, "w", encoding="utf-8") as file:
+                        file.writelines(outlines)
 
 
 def replace_playlists(output: str, source_key="PC", convert=True, copy=False,
