@@ -12,7 +12,7 @@ __all__ = ["replace_playlists", "folders_to_playlist"]
 from filetools.helpers import file_has_ext
 
 
-def replace_playlists(output: str, source_key="PC", encoding='latin', convert=True, copy=False,
+def replace_playlists(output: str, source_key="PC", convert=True, copy=False,
                       convertible_ext=(".m4a", ".flac")):
     """
     prepare playlist for different destination
@@ -20,8 +20,6 @@ def replace_playlists(output: str, source_key="PC", encoding='latin', convert=Tr
         column for output destination
     :param source_key:
         valid path on PC where this is executed
-    :param encoding:
-        system encoding in case of umlaute
     :param convert:
         optional feature to convert to mp3 if output is old IPod
         see: https://github.com/jiaaro/pydub
@@ -47,11 +45,11 @@ def replace_playlists(output: str, source_key="PC", encoding='latin', convert=Tr
             if filename == csv_filename:
                 continue
             outlines = []
-            with open(filename, "r") as file:
+            with open(filename, "r", encoding="utf-8") as file:
                 for line in file:
                     if not line.startswith('#'):
                         name_org = line.strip()
-                        if os.path.isfile(name_org.encode(encoding)):
+                        if os.path.isfile(name_org):
                             entries_for_replace = [row for row in mapping_rows if row[source_key] in line]
                             if len(entries_for_replace) != 0:
                                 row = entries_for_replace[0]
@@ -63,22 +61,22 @@ def replace_playlists(output: str, source_key="PC", encoding='latin', convert=Tr
                                     if fileext in convertible_ext:
                                         line = line.replace(fileext, ".mp3")
                                         name_dest = line.strip()
-                                        if convert and not os.path.isfile(name_dest.encode(encoding)):
-                                            print("convert to mp3: ", name_dest.encode(encoding))
+                                        if convert and not os.path.isfile(name_dest):
+                                            print("convert to mp3: ", name_dest)
                                             os.makedirs(os.path.dirname(name_dest), exist_ok=True)
                                             org_version = AudioSegment.from_file(name_org, fileext[1:].lower())
                                             org_version.export(name_dest, format="mp3", bitrate="320k",
                                                                tags=mediainfo(name_org)['TAG'])
                                 if copy:
                                     name_dest = line.strip()
-                                    if not os.path.isfile(name_dest.encode(encoding)):
+                                    if not os.path.isfile(name_dest):
                                         os.makedirs(os.path.dirname(name_dest), exist_ok=True)
                                         print('copy: ', name_org, name_dest)
-                                        copyfile(os.fsdecode(name_org.encode(encoding)), os.fsdecode(name_dest.encode(encoding)))
+                                        copyfile(name_org, name_dest)
                             else:
                                 print('warning - destination not configured: ', line)
                         else:
-                            print('warning - does not exist: ', filename, name_org.encode(encoding))
+                            print('warning - does not exist: ', filename, name_org)
                     outlines.append(line)
                     all_lines.append(line)
             _create_file(out_dir, filename, outlines)
@@ -89,7 +87,7 @@ def replace_playlists(output: str, source_key="PC", encoding='latin', convert=Tr
 
 def _read_mapping(csv_filename: str) -> List[Union[Dict[str, str], OrderedDict[str, str]]]:
     csv.register_dialect('semicolon', delimiter=';', lineterminator='\r\n')
-    with open(csv_filename, "r") as csv_file:
+    with open(csv_filename, "r", encoding="utf-8") as csv_file:
         reader = csv.DictReader(csv_file, dialect='semicolon')
         return [row for row in reader]
 
