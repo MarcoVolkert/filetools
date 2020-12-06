@@ -1,5 +1,7 @@
 import csv
 import os
+import sys
+from shutil import copyfile
 from typing import List, Union, OrderedDict, Dict
 
 from pydub import AudioSegment
@@ -10,7 +12,8 @@ __all__ = ["replace_playlists", "folders_to_playlist"]
 from filetools.helpers import file_has_ext
 
 
-def replace_playlists(output: str, source_key="PC", encoding='latin', convert=True):
+def replace_playlists(output: str, source_key="PC", encoding='latin', convert=True, copy=False,
+                      convertible_ext=(".m4a", ".flac")):
     """
     prepare playlist for different destination
     :param output:
@@ -24,8 +27,13 @@ def replace_playlists(output: str, source_key="PC", encoding='latin', convert=Tr
         see: https://github.com/jiaaro/pydub
         download: https://www.gyan.dev/ffmpeg/builds/
         put into path in start script: os.environ["PATH"] += os.pathsep + r"C:\Program Files\ffmpeg\bin"
+    :param copy:
+        copy to new path
+    :param convertible_ext:
+        extension that should be converted to mp3
     :return:
     """
+    print(sys.getfilesystemencoding())
     cwd = os.getcwd()
     out_dir = os.path.join(cwd, output)
     os.makedirs(out_dir, exist_ok=True)
@@ -44,18 +52,31 @@ def replace_playlists(output: str, source_key="PC", encoding='latin', convert=Tr
                     if not line.startswith('#'):
                         name_org = line.strip()
                         if os.path.isfile(name_org.encode(encoding)):
-                            for row in mapping_rows:
-                                if row[source_key] in line:
-                                    if output == "IPod":
-                                        if file_has_ext(name_org, ".m4a"):
-                                            line = line.replace(row[source_key], row[output]).replace(".m4a", ".mp3")
-                                            if convert and not os.path.isfile(name_org.encode(encoding)):
-                                                print("convert to mp3: ", name_org.encode(encoding))
-                                                org_version = AudioSegment.from_file(name_org, "m4a")
-                                                org_version.export(name_org, format="mp3", bitrate="320k",
-                                                                   tags=mediainfo(name_org)['TAG'])
-                                    else:
-                                        line = line.replace(row[source_key], row[output])
+                            entries_for_replace = [row for row in mapping_rows if row[source_key] in line]
+                            if len(entries_for_replace) != 0:
+                                row = entries_for_replace[0]
+                                if not row[output]:
+                                    row[output] = row[source_key]
+                                line = row[output] + line[line.rfind(os.path.sep) + 1:]
+                                if output == "IPod":
+                                    fileext = name_org[name_org.rfind("."):]
+                                    if fileext in convertible_ext:
+                                        line = line.replace(fileext, ".mp3")
+                                        name_dest = line.strip()
+                                        if convert and not os.path.isfile(name_dest.encode(encoding)):
+                                            print("convert to mp3: ", name_dest.encode(encoding))
+                                            os.makedirs(os.path.dirname(name_dest), exist_ok=True)
+                                            org_version = AudioSegment.from_file(name_org, fileext[1:].lower())
+                                            org_version.export(name_dest, format="mp3", bitrate="320k",
+                                                               tags=mediainfo(name_org)['TAG'])
+                                if copy:
+                                    name_dest = line.strip()
+                                    if not os.path.isfile(name_dest.encode(encoding)):
+                                        os.makedirs(os.path.dirname(name_dest), exist_ok=True)
+                                        print('copy: ', name_org, name_dest)
+                                        copyfile(os.fsdecode(name_org.encode(encoding)), os.fsdecode(name_dest.encode(encoding)))
+                            else:
+                                print('warning - destination not configured: ', line)
                         else:
                             print('warning - does not exist: ', filename, name_org.encode(encoding))
                     outlines.append(line)
