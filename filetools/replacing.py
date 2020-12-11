@@ -35,12 +35,14 @@ def replace(reverse=False):
                         file.writelines(outlines)
 
 
-def replace_playlists(output: str, convert=True, copy=False, source_key="PC",
+def replace_playlists(output: str, include_only="", convert=True, copy=False, source_key="PC",
                       convertible_ext=(".m4a", ".flac", ".wav")):
     """
     prepare playlist for different destination
     :param output:
         column for output destination
+    :param include_only:
+        which playlist files should be included - if empty, all are included
     :param convert:
         optional feature to convert to mp3 if output is old IPod
         see: https://github.com/jiaaro/pydub
@@ -67,6 +69,8 @@ def replace_playlists(output: str, convert=True, copy=False, source_key="PC",
         for filename in filenames:
             if filename == csv_filename:
                 continue
+            if include_only and include_only not in filename:
+                continue
             outlines = []
             with open(filename, "r", encoding="utf-8") as file:
                 for line in file:
@@ -78,7 +82,6 @@ def replace_playlists(output: str, convert=True, copy=False, source_key="PC",
                                 row = entries_for_replace[0]
                                 if not row[output]:
                                     row[output] = row[source_key]
-                                line = row[output] + line[line.rfind(os.path.sep) + 1:]
                                 if output == "IPod":
                                     fileext = name_org[name_org.rfind("."):]
                                     if fileext in convertible_ext:
