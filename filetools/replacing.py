@@ -82,6 +82,7 @@ def replace_playlists(output: str, convert=True, copy=False, source_key="PC",
                                 if output == "IPod":
                                     fileext = name_org[name_org.rfind("."):]
                                     if fileext in convertible_ext:
+                                        line = row[output] + line[line.rfind(os.path.sep) + 1:]
                                         line = line.replace(fileext, ".mp3")
                                         name_dest = line.strip()
                                         if convert and not os.path.isfile(name_dest):
@@ -90,6 +91,8 @@ def replace_playlists(output: str, convert=True, copy=False, source_key="PC",
                                             org_version = AudioSegment.from_file(name_org, fileext[1:].lower())
                                             org_version.export(name_dest, format="mp3", bitrate="320k",
                                                                tags=mediainfo(name_org)['TAG'])
+                                else:
+                                    line = row[output] + line[line.rfind(os.path.sep) + 1:]
                                 if copy:
                                     name_dest = line.strip()
                                     if not os.path.isfile(name_dest):
