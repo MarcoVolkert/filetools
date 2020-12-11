@@ -103,8 +103,10 @@ def replace_playlists(output: str, convert=True, copy=False, source_key="PC",
                                 print('warning - destination not configured: ', line)
                         else:
                             print('warning - does not exist: ', filename, name_org)
-                    outlines.append(line)
-                    all_lines.append(line)
+                    if line not in outlines:
+                        outlines.append(line)
+                    if line not in all_lines:
+                        all_lines.append(line)
             _create_file(out_dir, filename, outlines)
             _create_wpl_file(os.path.join(out_dir, filename), outlines)
 
