@@ -98,7 +98,7 @@ def replace_playlists(output: str, include_only="", convert=True, copy=False, so
                                     line = row[output] + line[line.rfind(os.path.sep) + 1:]
                                 if copy:
                                     name_dest = line.strip()
-                                    if not name_org == name_dest and not os.path.isfile(name_dest):
+                                    if not row[output] == row[source_key] and not os.path.isfile(name_dest):
                                         os.makedirs(os.path.dirname(name_dest), exist_ok=True)
                                         print('copy: ', name_org, name_dest)
                                         copyfile(name_org, name_dest)
