@@ -114,6 +114,7 @@ def replace_playlists(output: str, include_only="", convert=True, copy=False, so
             _create_wpl_file(os.path.join(out_dir, filename), outlines)
 
     _create_file(output, "combined.m3u8", all_lines)
+    _create_wpl_file(os.path.join(out_dir, "combined"), all_lines)
 
 
 def _read_mapping(csv_filename: str) -> List[Union[Dict[str, str], OrderedDict[str, str]]]:
