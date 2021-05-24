@@ -165,6 +165,7 @@ def downloadFilesMulti(mainpage: str, names: List[str], sub_side="", g_xpath='//
                        name_source: NameSource = NameSource.URL, pretty_print=False,
                        description_xpath='', description_gallery_xpath='', tags_gallery_xpath='',
                        statistic_only=False, analyse_local=False):
+    names.sort()
     for name in names:
         downloadFiles(mainpage=mainpage, name=name, sub_side=sub_side, g_xpath=g_xpath, g_contains=g_contains,
                       f_xpath=f_xpath, f_contains=f_contains,
@@ -452,6 +453,9 @@ class HtmlFileResolver(HtmlResolver):
         filepath = os.path.join(dest, filename)
         if not isfile(filepath):
             print('file not found: ', filepath)
-            return b''
+            filepath = os.path.join(dest, filename.replace(' ', '-').lower())
+            if not isfile(filepath):
+                print('file not found: ', filepath)
+                return b''
         self.last_date = modification_date(filepath)
         return read_file_as_bytes(filepath)
