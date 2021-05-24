@@ -147,12 +147,16 @@ def folders_to_playlist():
     cwd = os.getcwd()
     out_dir = os.path.join(cwd, "playlists")
     os.makedirs(out_dir, exist_ok=True)
+    all_lines = []
     for (dirpath, dirnames, filenames) in os.walk(cwd):
         basename = os.path.basename(dirpath)
         outlines = [os.path.join(dirpath, filename + "\n") for filename in filenames if
-                    file_has_ext(filename, ['.mp3', '.m4a'])]
+                    file_has_ext(filename, ['.mp3', '.m4a', '.mp4', '.flv'])]
         if not outlines:
             continue
         playlist_name = os.path.join(out_dir, basename + ".m3u8")
         _create_file(out_dir, basename + ".m3u8", outlines)
         _create_wpl_file(playlist_name, outlines)
+        all_lines += outlines
+    all_lines.sort()
+    _create_file(out_dir, "combined.m3u8", all_lines)
