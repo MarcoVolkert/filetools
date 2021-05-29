@@ -214,3 +214,21 @@ def _dict_to_string(file_dict: OrderedDict):
             outstring += "\t" + dirpath
         outstring += "\n"
     return outstring
+
+
+def compare_folders(folder1: str, folder2: str) -> List[str]:
+    inpath1 = concatPath(folder1)
+    inpath2 = concatPath(folder2)
+    dirnames1 = []
+    dirnames2 = []
+    for (dirpath, dirnames, filenames) in os.walk(inpath1):
+        if not dirpath == inpath1:
+            break
+        dirnames1 = dirnames
+
+    for (dirpath, dirnames, filenames) in os.walk(inpath2):
+        if not dirpath == inpath2:
+            break
+        dirnames2 = dirnames
+
+    return [dirname for dirname in dirnames1 if dirname in dirnames2]
