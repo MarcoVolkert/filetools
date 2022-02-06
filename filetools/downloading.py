@@ -13,6 +13,7 @@ __status__ = "Development"
 
 import os
 import re
+from collections import OrderedDict
 from datetime import datetime
 from http.cookies import SimpleCookie
 from time import sleep
@@ -92,7 +93,8 @@ def get_content(page: bytes, xpath: str) -> List[str]:
 def downloadFiles(mainpage: str, name: str, sub_side="", query="", g_xpath='//a', g_contains='', f_xpath='//a',
                   f_contains="", g_part=-1, f_part=-1, ext="", cookies: Union[dict, str] = None, paginator="",
                   name_source: NameSource = NameSource.URL, start_after="", pretty_print=False, description_xpath='',
-                  description_gallery_xpath='', tags_gallery_xpath='', statistic_only=False, analyse_local=False):
+                  description_gallery_xpath='', tags_gallery_xpath='', gallery_overview_info_xpath='',
+                  statistic_only=False, analyse_local=False):
     if analyse_local:
         html_resolver = HtmlFileResolver(mainpage, name, sub_side, query=query, pretty_print=pretty_print)
     else:
@@ -112,11 +114,16 @@ def downloadFiles(mainpage: str, name: str, sub_side="", query="", g_xpath='//a'
 
     # extract galleries
     galleries = []
+    gallery_overview_info = []
     for html_page in html_list:
         galleries += get_hrefs(html_page, g_xpath, g_contains)
+        if gallery_overview_info_xpath:
+            gallery_overview_info += get_content(html_page, gallery_overview_info_xpath)
     if not galleries:
         return
+    galleries = list(OrderedDict.fromkeys(galleries))
     galleries.reverse()
+    gallery_overview_info.reverse()
 
     html_title = get_content(html_list[0], r"//title")[0]
     html_description = get_content(html_list[0], description_xpath)
@@ -153,8 +160,9 @@ def downloadFiles(mainpage: str, name: str, sub_side="", query="", g_xpath='//a'
             if j == 0:
                 html_description_gallery = get_content(html_list_gallery[0], description_gallery_xpath)
                 html_tags_gallery = get_content(html_list_gallery[0], tags_gallery_xpath)
+                gallery_overview_info_entry = gallery_overview_info[i] if i < len(gallery_overview_info) else ''
                 _log_gallery(html_resolver, dirname_gallery, filename, file_urls, gallery,
-                             html_tags_gallery, html_description_gallery)
+                             html_tags_gallery, html_description_gallery, gallery_overview_info_entry)
             if not statistic_only:
                 download_file_direct(file_url, dest_gallery, filename, cookies=html_resolver.cookies,
                                      headers={'Referer': gallery_url}, name_source=name_source)
@@ -163,7 +171,8 @@ def downloadFiles(mainpage: str, name: str, sub_side="", query="", g_xpath='//a'
 def downloadFilesMulti(mainpage: str, names: List[str], sub_side="", query="", g_xpath='//a', g_contains='',
                        f_xpath='//a', f_contains="", g_part=-1, f_part=-1, ext="", cookies: Union[dict, str] = None,
                        paginator="", name_source: NameSource = NameSource.URL, pretty_print=False, description_xpath='',
-                       description_gallery_xpath='', tags_gallery_xpath='', statistic_only=False, analyse_local=False):
+                       description_gallery_xpath='', tags_gallery_xpath='', gallery_overview_info_xpath='',
+                       statistic_only=False, analyse_local=False):
     names.sort()
     for name in names:
         downloadFiles(mainpage=mainpage, name=name, sub_side=sub_side, query=query,
@@ -171,7 +180,8 @@ def downloadFilesMulti(mainpage: str, names: List[str], sub_side="", query="", g
                       f_xpath=f_xpath, f_contains=f_contains, g_part=g_part, f_part=f_part, ext=ext, cookies=cookies,
                       paginator=paginator, name_source=name_source, pretty_print=pretty_print,
                       description_xpath=description_xpath, description_gallery_xpath=description_gallery_xpath,
-                      tags_gallery_xpath=tags_gallery_xpath, statistic_only=statistic_only, analyse_local=analyse_local)
+                      tags_gallery_xpath=tags_gallery_xpath, gallery_overview_info_xpath=gallery_overview_info_xpath,
+                      statistic_only=statistic_only, analyse_local=analyse_local)
 
 
 def downloadFilesFromGallery(mainpage: str, subpage: str, xpath='//a', contains="", part=-1, ext="",
@@ -360,18 +370,19 @@ def _log_name(html_resolver: HtmlResolver, galleries: List[str],
 
 
 def _log_gallery(html_resolver: HtmlResolver, dirname_gallery: str, filename: str,
-                 file_urls: List[str], gallery: str, html_tags: List[str], html_description: List[str]):
+                 file_urls: List[str], gallery: str, html_tags: List[str], html_description: List[str],
+                 overview_info=""):
     ofilename = os.path.join(html_resolver.dest_main, "download2_galleries.csv")
     ofile_exists = os.path.isfile(ofilename)
     with open(ofilename, 'a') as ofile:
         if not ofile_exists:
             ofile.write(";".join(
                 ["dirname_mainpage", "dirname_name", "dirname_gallery", "filename", "number-of-files",
-                 "download-source-gallery", "download-date", "html_tags", "html_description"]) + "\n")
+                 "download-source-gallery", "download-date", "html_tags", "html_description", "overview_info"]) + "\n")
         ofile.write(";".join(
             [html_resolver.dirname_mainpage, html_resolver.dirname_name, dirname_gallery, filename, str(len(file_urls)),
              gallery, str(html_resolver.last_date),
-             ", ".join(html_tags), ", ".join(html_description)]) + "\n")
+             ", ".join(html_tags), ", ".join(html_description), overview_info]) + "\n")
 
 
 def pretty_name(name: str) -> str:
