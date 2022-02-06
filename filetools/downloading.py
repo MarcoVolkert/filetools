@@ -41,8 +41,8 @@ class HtmlResolver:
     dest_html: str = None
     last_date: datetime = datetime.now()
 
-    def __init__(self, mainpage: str, name: str, sub_side: str = "", pretty_print=False):
-        self.http_path = _build_http_path(mainpage, sub_side, name)
+    def __init__(self, mainpage: str, name: str, sub_side: str = "", query="", pretty_print=False):
+        self.http_path = _build_http_path(mainpage, sub_side, name, query)
         self._set_names(mainpage, name, pretty_print)
 
     def _set_names(self, mainpage: str, name: str, pretty_print=False):
@@ -89,15 +89,15 @@ def get_content(page: bytes, xpath: str) -> List[str]:
     return [element.text_content() for element in elements]
 
 
-def downloadFiles(mainpage: str, name: str, sub_side="", g_xpath='//a', g_contains='', f_xpath='//a', f_contains="",
-                  g_part=-1, f_part=-1, ext="", cookies: Union[dict, str] = None, paginator="",
+def downloadFiles(mainpage: str, name: str, sub_side="", query="", g_xpath='//a', g_contains='', f_xpath='//a',
+                  f_contains="", g_part=-1, f_part=-1, ext="", cookies: Union[dict, str] = None, paginator="",
                   name_source: NameSource = NameSource.URL, start_after="", pretty_print=False, description_xpath='',
-                  description_gallery_xpath='', tags_gallery_xpath='',
-                  statistic_only=False, analyse_local=False):
+                  description_gallery_xpath='', tags_gallery_xpath='', statistic_only=False, analyse_local=False):
     if analyse_local:
-        html_resolver = HtmlFileResolver(mainpage, name, sub_side, pretty_print)
+        html_resolver = HtmlFileResolver(mainpage, name, sub_side, query=query, pretty_print=pretty_print)
     else:
-        html_resolver = HtmlHttpResolver(mainpage, name, sub_side, pretty_print, cookies)
+        html_resolver = HtmlHttpResolver(mainpage, name, sub_side, query=query, pretty_print=pretty_print,
+                                         cookies=cookies)
 
     # determine url of overview pages
     urls = [html_resolver.http_path]
@@ -160,20 +160,18 @@ def downloadFiles(mainpage: str, name: str, sub_side="", g_xpath='//a', g_contai
                                      headers={'Referer': gallery_url}, name_source=name_source)
 
 
-def downloadFilesMulti(mainpage: str, names: List[str], sub_side="", g_xpath='//a', g_contains='', f_xpath='//a',
-                       f_contains="", g_part=-1, f_part=-1, ext="", cookies: Union[dict, str] = None, paginator="",
-                       name_source: NameSource = NameSource.URL, pretty_print=False,
-                       description_xpath='', description_gallery_xpath='', tags_gallery_xpath='',
-                       statistic_only=False, analyse_local=False):
+def downloadFilesMulti(mainpage: str, names: List[str], sub_side="", query="", g_xpath='//a', g_contains='',
+                       f_xpath='//a', f_contains="", g_part=-1, f_part=-1, ext="", cookies: Union[dict, str] = None,
+                       paginator="", name_source: NameSource = NameSource.URL, pretty_print=False, description_xpath='',
+                       description_gallery_xpath='', tags_gallery_xpath='', statistic_only=False, analyse_local=False):
     names.sort()
     for name in names:
-        downloadFiles(mainpage=mainpage, name=name, sub_side=sub_side, g_xpath=g_xpath, g_contains=g_contains,
-                      f_xpath=f_xpath, f_contains=f_contains,
-                      g_part=g_part, f_part=f_part, ext=ext, cookies=cookies,
+        downloadFiles(mainpage=mainpage, name=name, sub_side=sub_side, query=query,
+                      g_xpath=g_xpath, g_contains=g_contains,
+                      f_xpath=f_xpath, f_contains=f_contains, g_part=g_part, f_part=f_part, ext=ext, cookies=cookies,
                       paginator=paginator, name_source=name_source, pretty_print=pretty_print,
                       description_xpath=description_xpath, description_gallery_xpath=description_gallery_xpath,
-                      tags_gallery_xpath=tags_gallery_xpath,
-                      statistic_only=statistic_only, analyse_local=analyse_local)
+                      tags_gallery_xpath=tags_gallery_xpath, statistic_only=statistic_only, analyse_local=analyse_local)
 
 
 def downloadFilesFromGallery(mainpage: str, subpage: str, xpath='//a', contains="", part=-1, ext="",
@@ -214,12 +212,12 @@ def downloadFile(url: str, dest: str, filename="", part=-1, ext="", cookies: dic
     print(filename)
     if not filename:
         filename = _build_file_name([url], 0, part=part, ext=ext)
+    url = _strip_options(url)
     return download_file_direct(url, dest, filename, cookies, headers, do_throw, name_source)
 
 
 def download_file_direct(url: str, dest: str, filename: str, cookies: dict = None, headers: dict = None,
                          do_throw=False, name_source: NameSource = NameSource.URL) -> Tuple[Response, str]:
-    url = _strip_options(url)
     response = get_response(url, cookies, headers, do_throw)
     if response.status_code != 200:
         return response, ""
@@ -269,14 +267,14 @@ def _strip_url(url: str) -> str:
     return name
 
 
-def _build_http_path(mainpage: str, sub_side: str, name: str = "") -> str:
+def _build_http_path(mainpage: str, sub_side: str, name: str = "", query="") -> str:
     http_path = ''
     if sub_side:
         http_path += '/' + sub_side
     if name:
         http_path += '/' + name
         if not name.endswith("html"):
-            http_path += "/"
+            http_path += "/" + query
     return _createUrl(http_path, mainpage)
 
 
@@ -371,8 +369,9 @@ def _log_gallery(html_resolver: HtmlResolver, dirname_gallery: str, filename: st
                 ["dirname_mainpage", "dirname_name", "dirname_gallery", "filename", "number-of-files",
                  "download-source-gallery", "download-date", "html_tags", "html_description"]) + "\n")
         ofile.write(";".join(
-            [html_resolver.dirname_mainpage, html_resolver.dirname_name, dirname_gallery, filename, str(len(file_urls)), gallery,
-             str(html_resolver.last_date), ", ".join(html_tags), ", ".join(html_description)]) + "\n")
+            [html_resolver.dirname_mainpage, html_resolver.dirname_name, dirname_gallery, filename, str(len(file_urls)),
+             gallery, str(html_resolver.last_date),
+             ", ".join(html_tags), ", ".join(html_description)]) + "\n")
 
 
 def pretty_name(name: str) -> str:
@@ -389,9 +388,9 @@ class HtmlHttpResolver(HtmlResolver):
     cookies: dict = None
     headers: dict = None
 
-    def __init__(self, mainpage: str, name: str, sub_side: str = "", pretty_print=False,
+    def __init__(self, mainpage: str, name: str, sub_side: str = "", query="", pretty_print=False,
                  cookies: Union[dict, str] = None, headers: dict = None):
-        super().__init__(mainpage, name, sub_side, pretty_print)
+        super().__init__(mainpage, name, sub_side, query, pretty_print=pretty_print)
         self._set_cookies(cookies)
         self._set_headers(headers)
         os.makedirs(self.dest_name, exist_ok=True)
@@ -433,8 +432,8 @@ class HtmlHttpResolver(HtmlResolver):
 
 class HtmlFileResolver(HtmlResolver):
 
-    def __init__(self, mainpage: str, name: str, sub_side: str = "", pretty_print=False):
-        super().__init__(mainpage, name, sub_side, pretty_print)
+    def __init__(self, mainpage: str, name: str, sub_side: str = "", query="", pretty_print=False):
+        super().__init__(mainpage, name, sub_side, query, pretty_print=pretty_print)
 
     def get_mainpage(self) -> bytes:
         filepath = os.path.join(self.dest_html, "%s.html" % self.dirname_name)
