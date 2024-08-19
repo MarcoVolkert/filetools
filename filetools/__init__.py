@@ -10,7 +10,8 @@ __status__ = "Development"
 
 __all__ = ["renaming", "sorting", "downloading", "replacing"]
 
-from filetools.renaming import *
-from filetools.sorting import *
 from filetools.downloading import *
+from filetools.renaming import *
 from filetools.replacing import *
+from filetools.sorting import *
+from filetools.treesize import *
